@@ -95,6 +95,7 @@ set(config_module_list
 	modules/mavlink
 	modules/navigator
 	modules/uavcan
+	modules/drop_deleaves
 
 	#
 	# Estimation modules
@@ -149,16 +150,16 @@ set(config_module_list
 
 	# Tutorial code from
 	# https://px4.io/dev/px4_simple_app
-	examples/px4_simple_app
+#	examples/px4_simple_app
 
 	# Tutorial code from
 	# https://px4.io/dev/debug_values
-	examples/px4_mavlink_debug
+#	examples/px4_mavlink_debug
 
 	# Tutorial code from
 	# https://px4.io/dev/example_fixedwing_control
-	examples/fixedwing_control
+#	examples/fixedwing_control
 
 	# Hardware test
-	examples/hwtest
+#	examples/hwtest
 )
