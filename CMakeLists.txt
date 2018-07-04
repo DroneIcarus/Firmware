@@ -132,8 +132,7 @@ define_property(GLOBAL PROPERTY PX4_MODULE_PATHS
 # configuration
 #
 
-#set(CONFIG "posix_sitl_default" CACHE STRING "desired configuration")
-set(CONFIG "nuttx_px4fmu-v2_default" CACHE STRING "desired configuration")
+set(CONFIG "nuttx_px4fmu-v3_default" CACHE STRING "desired configuration")
 
 
 string(REPLACE "_" ";" config_args ${CONFIG})
