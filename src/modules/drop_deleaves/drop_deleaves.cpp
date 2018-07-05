@@ -39,89 +39,155 @@
  * @author Louis Lepitre <louis.lepitre@usherbrooke.ca>
  */
 
-#include <px4_config.h>
-#include <px4_tasks.h>
-#include <px4_posix.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <poll.h>
-#include <string.h>
-#include <math.h>
+#include "drop_deleaves.hpp"
 
-#include <uORB/uORB.h>
-#include <uORB/topics/sensor_combined.h>
-#include <uORB/topics/vehicle_attitude.h>
+#include <drivers/drv_hrt.h>
+
 
 extern "C" __EXPORT int drop_deleaves_main(int argc, char **argv);
 
-int drop_deleaves_main(int argc, char **argv)
+
+DropDeLeaves::DropDeLeaves() :
+    ModuleParams(nullptr),
+    _loop_perf(perf_alloc(PC_ELAPSED, "drop_deleaves"))
 {
-	PX4_INFO("Hello Sky!");
+}
 
-	/* subscribe to sensor_combined topic */
-	int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));
-	/* limit the update rate to 5 Hz */
-	orb_set_interval(sensor_sub_fd, 200);
+int DropDeLeaves::print_usage(const char *reason)
+{
+    if (reason) {
+        PX4_WARN("%s\n", reason);
+    }
 
-	/* advertise attitude topic */
-	struct vehicle_attitude_s att;
-	memset(&att, 0, sizeof(att));
-	orb_advert_t att_pub = orb_advertise(ORB_ID(vehicle_attitude), &att);
+    PRINT_MODULE_DESCRIPTION(
+            R"DESCR_STR(
+### Description
+Put new description.
 
-	/* one could wait for multiple topics with this technique, just using one here */
-	px4_pollfd_struct_t fds[1];
-	fds[0].fd = sensor_sub_fd;
-	fds[0].events = POLLIN;
+)DESCR_STR");
 
-	int error_counter = 0;
+    PRINT_MODULE_USAGE_NAME("mc_att_control", "controller");
+    PRINT_MODULE_USAGE_COMMAND("start");
+    PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 
-	for (int i = 0; i < 5; i++) {
-		/* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
-		int poll_ret = px4_poll(fds, 1, 1000);
+    return 0;
+}
 
-		/* handle the poll result */
-		if (poll_ret == 0) {
-			/* this means none of our providers is giving us data */
-			PX4_ERR("Got no data within a second");
+void DropDeLeaves::rc_channels_poll()
+{
+    bool updated;
+    orb_check(_rc_channels_sub, &updated);
 
-		} else if (poll_ret < 0) {
-			/* this is seriously bad - should be an emergency */
-			if (error_counter < 10 || error_counter % 50 == 0) {
-				/* use a counter to prevent flooding (and slowing us down) */
-				PX4_ERR("ERROR return value from poll(): %d", poll_ret);
-			}
+    if (updated) {
+        orb_copy(ORB_ID(rc_channels), _rc_channels_sub, &_rc_channels);
+    }
+}
 
-			error_counter++;
+void
+DropDeLeaves::run()
+{
+    _rc_channels_sub = orb_subscribe(ORB_ID(rc_channels));
+    orb_set_interval(_rc_channels_sub, 100);
 
-		} else {
 
-			if (fds[0].revents & POLLIN) {
-				/* obtained data for the first file descriptor */
-				struct sensor_combined_s raw;
-				/* copy sensors raw data into local buffer */
-				orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
-				PX4_INFO("Accelerometer:\t%8.4f\t%8.4f\t%8.4f",
-					 (double)raw.accelerometer_m_s2[0],
-					 (double)raw.accelerometer_m_s2[1],
-					 (double)raw.accelerometer_m_s2[2]);
+    _outputs_id = ORB_ID(actuator_outputs);
+    _outputs_pub = orb_advertise(_outputs_id, &_outputs);
 
-				/* set att and publish this information for other apps
-				 the following does not have any meaning, it's just an example
-				*/
-				att.q[0] = raw.accelerometer_m_s2[0];
-				att.q[1] = raw.accelerometer_m_s2[1];
-				att.q[2] = raw.accelerometer_m_s2[2];
 
-				orb_publish(ORB_ID(vehicle_attitude), att_pub, &att);
-			}
 
-			/* there could be more file descriptors here, in the form like:
-			 * if (fds[1..n].revents & POLLIN) {}
-			 */
-		}
-	}
 
-	PX4_INFO("exiting");
+    rc_channels_poll();
 
-	return 0;
+    /* wakeup source */
+    px4_pollfd_struct_t poll_fds = {};
+
+    /* Setup of loop */
+    poll_fds.fd = _rc_channels_sub;
+    poll_fds.events = POLLIN;
+
+    const hrt_abstime task_start = hrt_absolute_time();
+    hrt_abstime last_run = task_start;
+
+    while(!should_exit()) {
+        /* wait for up to 100ms for data */
+        int pret = px4_poll(&poll_fds, 1, 100);
+
+        /* timed out - periodic check for should_exit() */
+        if (pret == 0) {
+            continue;
+        }
+
+        /* this is undesirable but not much we can do - might want to flag unhappy status */
+        if (pret < 0) {
+            PX4_ERR("poll error %d, %d", pret, errno);
+            /* sleep a bit before next try */
+            usleep(1000);
+            continue;
+        }
+
+        perf_begin(_loop_perf);
+
+        /* run controller on gyro changes */
+        if (poll_fds.revents & POLLIN) {
+            const hrt_abstime now = hrt_absolute_time();
+            float dt = (now - last_run) / 1e6f;
+            last_run = now;
+
+            /* guard against too small (< 2ms) and too large (> 20ms) dt's */
+            if (dt < 0.002f) {
+                dt = 0.002f;
+
+            } else if (dt > 0.02f) {
+                dt = 0.02f;
+            }
+
+            rc_channels_poll();
+
+            PX4_INFO("Input RC : %f", (double)_rc_channels.channels[9]);
+
+//            _outputs.output[10] = 1.0f;
+
+//            PX4_INFO("%f", (double)_outputs.output[10]);
+
+//            orb_publish(_outputs_id, _outputs_pub, &_outputs);
+        }
+
+//        request_stop();
+
+        perf_end(_loop_perf);
+    }
+
+    orb_unsubscribe(_rc_channels_sub);
+}
+
+int DropDeLeaves::task_spawn(int argc, char *argv[])
+{
+    _task_id = px4_task_spawn_cmd("drop_deleaves",
+                                  SCHED_DEFAULT,
+                                  SCHED_PRIORITY_ATTITUDE_CONTROL,
+                                  1700,
+                                  (px4_main_t)&run_trampoline,
+                                  (char *const *)argv);
+
+    if (_task_id < 0) {
+        _task_id = -1;
+        return -errno;
+    }
+
+    return 0;
+}
+
+DropDeLeaves *DropDeLeaves::instantiate(int argc, char *argv[])
+{
+    return new DropDeLeaves();
+}
+
+int DropDeLeaves::custom_command(int argc, char *argv[])
+{
+    return print_usage("unknown command");
+}
+
+int drop_deleaves_main(int argc, char *argv[])
+{
+    return DropDeLeaves::main(argc, argv);
 }

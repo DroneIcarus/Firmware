@@ -33,8 +33,13 @@
 px4_add_module(
 	MODULE modules__drop_deleaves
 	MAIN drop_deleaves
-	STACK_MAIN 2000
+	STACK_MAIN 1200
+	STACK_MAX 3500
+	COMPILE_FLAGS
 	SRCS
-        drop_deleaves.cpp
+		drop_deleaves.cpp
 	DEPENDS
+		circuit_breaker
+		conversion
+		mathlib
 	)

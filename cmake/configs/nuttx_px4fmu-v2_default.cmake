@@ -39,7 +39,7 @@ set(config_module_list
 	drivers/px4flow
 	drivers/px4fmu
 	drivers/px4io
-	drivers/rgbled
+	#drivers/rgbled
 	drivers/stm32
 	drivers/stm32/adc
 	drivers/stm32/tone_alarm
@@ -47,15 +47,16 @@ set(config_module_list
 	drivers/vmount
 
 	# distance sensors
-	drivers/distance_sensor/ll40ls
+	#drivers/distance_sensor/ll40ls
 	#drivers/distance_sensor/mb12xx
-	drivers/distance_sensor/sf0x
-	drivers/distance_sensor/sf1xx
-	drivers/distance_sensor/srf02
-	drivers/distance_sensor/teraranger
-	drivers/distance_sensor/tfmini
+	#drivers/distance_sensor/sf0x
+	#drivers/distance_sensor/sf1xx
+	#drivers/distance_sensor/srf02
+	#drivers/distance_sensor/teraranger
+	#drivers/distance_sensor/tfmini
 	#drivers/distance_sensor/ulanding
 	modules/sensors
+	modules/drop_deleaves
 
 	#
 	# System commands
@@ -77,7 +78,7 @@ set(config_module_list
 	systemcmds/reboot
 	#systemcmds/sd_bench
 	systemcmds/top
-	#systemcmds/topic_listener
+	systemcmds/topic_listener
 	systemcmds/tune_control
 	systemcmds/ver
 
@@ -97,7 +98,7 @@ set(config_module_list
 	#
 	# General system control
 	#
-	modules/camera_feedback
+	#modules/camera_feedback
 	modules/commander
 	modules/events
 	#modules/gpio_led
@@ -120,8 +121,8 @@ set(config_module_list
 	#
 	# Vehicle Control
 	#
-	modules/fw_att_control
-	modules/fw_pos_control_l1
+#	modules/fw_att_control
+#	modules/fw_pos_control_l1
 	#modules/gnd_att_control
 	#modules/gnd_pos_control
 	modules/mc_att_control
@@ -131,7 +132,7 @@ set(config_module_list
 	#
 	# Logging
 	#
-	modules/logger
+	#modules/logger
 	#modules/sdlog2
 
 	#
