@@ -1,6 +1,7 @@
+
 /****************************************************************************
  *
- *   Copyright (c) 2012-2016 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2018 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,8 +50,10 @@ extern "C" __EXPORT int drop_deleaves_main(int argc, char **argv);
 
 DropDeLeaves::DropDeLeaves() :
     ModuleParams(nullptr),
+    _actuators {},
     _loop_perf(perf_alloc(PC_ELAPSED, "drop_deleaves"))
 {
+
 }
 
 int DropDeLeaves::print_usage(const char *reason)
@@ -73,6 +76,14 @@ Put new description.
     return 0;
 }
 
+int DropDeLeaves::print_status()
+{
+    PX4_INFO("Running");
+    // TODO: print additional runtime information about the state of the module
+
+    return 0;
+}
+
 void DropDeLeaves::rc_channels_poll()
 {
     bool updated;
@@ -83,20 +94,73 @@ void DropDeLeaves::rc_channels_poll()
     }
 }
 
+int
+DropDeLeaves::actuators_publish()
+{
+    _actuators.timestamp = hrt_absolute_time();
+
+    // lazily publish _actuators only once available
+    if (_actuator_pub != nullptr) {
+        return orb_publish(ORB_ID(actuator_controls_1), _actuator_pub, &_actuators);
+
+    } else {
+        _actuator_pub = orb_advertise(ORB_ID(actuator_controls_1), &_actuators);
+
+        if (_actuator_pub != nullptr) {
+            return OK;
+
+        } else {
+            return -1;
+        }
+    }
+}
+
+void
+DropDeLeaves::drop()
+{
+
+    // update drop actuator, wait 0.5s until the doors are open before dropping
+//    hrt_abstime starttime = hrt_absolute_time();
+
+    // activate drop mechanism, idx 4 for AUX 1
+    _actuators.control[4] = 1.0f;
+
+    actuators_publish();
+
+
+    warnx("drop systme activated");
+
+    // Delay for mechanism to be drop
+
+
+    usleep(1000 * 1000);
+
+#if 0
+    while (hrt_elapsed_time(&_doors_opened) < 500 * 1000 && hrt_elapsed_time(&starttime) < 2000000) {
+        usleep(50000);
+        warnx("delayed by door!");
+    }
+#endif
+
+    _drop_time = hrt_absolute_time();
+
+    warnx("dropping now");
+}
+
 void
 DropDeLeaves::run()
 {
     _rc_channels_sub = orb_subscribe(ORB_ID(rc_channels));
     orb_set_interval(_rc_channels_sub, 100);
 
-
-    _outputs_id = ORB_ID(actuator_outputs);
-    _outputs_pub = orb_advertise(_outputs_id, &_outputs);
-
+    _actuator_id = ORB_ID(actuator_controls_1);
+    _actuator_pub = orb_advertise(_actuator_id, &_actuators);
 
 
 
     rc_channels_poll();
+
+
 
     /* wakeup source */
     px4_pollfd_struct_t poll_fds = {};
@@ -143,13 +207,15 @@ DropDeLeaves::run()
 
             rc_channels_poll();
 
-            PX4_INFO("Input RC : %f", (double)_rc_channels.channels[9]);
+            if ((int)_rc_channels.channels[9] == 1) {
+                drop();
+            } else {
+                _actuators.control[4] = 0.0f;
+            }
 
-//            _outputs.output[10] = 1.0f;
 
-//            PX4_INFO("%f", (double)_outputs.output[10]);
 
-//            orb_publish(_outputs_id, _outputs_pub, &_outputs);
+            orb_publish(_actuator_id, _actuator_pub, &_actuators);
         }
 
 //        request_stop();
