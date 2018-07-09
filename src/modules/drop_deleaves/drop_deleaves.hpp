@@ -94,8 +94,12 @@ private:
     void		rc_channels_poll();
     int         actuators_publish();
 
+    void        drop_switch_state();
+    void        check_2_drop();
     void        drop();
 
+
+    hrt_abstime now;
 
     int _rc_channels_sub{-1};
 
@@ -103,7 +107,15 @@ private:
 
     struct actuator_controls_s      _actuators;    /**< actuator controls */
 
-    hrt_abstime	_drop_time;
+    bool _curr_drop_switch_state = 0;
+    bool _last_drop_switch_state = 0;
+
+    bool _flg_drop1 = 0;
+    bool _flg_drop2 = 0;
+    bool _flg_drop3 = 0;
+    bool _flg_drop4 = 0;
+    bool _flg_drop5 = 0;
+    hrt_abstime	_check_2_drop_time;
 
     orb_id_t _actuator_id{nullptr}; /**< pointer to correct actuator controls0 uORB metadata structure */
 

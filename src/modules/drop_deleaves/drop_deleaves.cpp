@@ -116,35 +116,78 @@ DropDeLeaves::actuators_publish()
 }
 
 void
+DropDeLeaves::drop_switch_state()
+{
+
+    _last_drop_switch_state = _curr_drop_switch_state;
+
+    if ((int)_rc_channels.channels[9] == 1) {
+        _curr_drop_switch_state = 1;
+
+    } else {
+        _curr_drop_switch_state = 0;
+    }
+
+}
+
+// Check if they have 5 state change of the drop switch in less than 1.5 sec.
+void
+DropDeLeaves::check_2_drop()
+{
+
+    if (_last_drop_switch_state != _curr_drop_switch_state) {
+
+        if (_flg_drop1 == 0) {
+            _check_2_drop_time = hrt_absolute_time();
+            _flg_drop1 = 1;
+
+        } else if (_flg_drop2 == 0) {
+            _flg_drop2 = 1;
+
+        } else if (_flg_drop3 == 0) {
+            _flg_drop3 = 1;
+
+        } else if (_flg_drop4 == 0) {
+            _flg_drop4 = 1;
+
+        } else if (_flg_drop5 == 0) {
+            _flg_drop5 = 1;
+
+        }
+
+    }
+
+    if (((double)now - (double)_check_2_drop_time) >= 1500000 && _flg_drop1 == 1) {
+        _flg_drop1 = 0;
+        _flg_drop2 = 0;
+        _flg_drop3 = 0;
+        _flg_drop4 = 0;
+        _flg_drop5 = 0;
+    }
+
+}
+
+void
 DropDeLeaves::drop()
 {
 
-    // update drop actuator, wait 0.5s until the doors are open before dropping
-//    hrt_abstime starttime = hrt_absolute_time();
-
     // activate drop mechanism, idx 4 for AUX 1
-    _actuators.control[4] = 1.0f;
 
+    _actuators.control[4] = 1.0f;
     actuators_publish();
 
-
-    warnx("drop systme activated");
+    warnx("drop system activated");
 
     // Delay for mechanism to be drop
+    usleep(3000000);
 
+    warnx("dropping ended");
 
-    usleep(1000 * 1000);
+    _actuators.control[4] = 0.0f;
+    actuators_publish();
 
-#if 0
-    while (hrt_elapsed_time(&_doors_opened) < 500 * 1000 && hrt_elapsed_time(&starttime) < 2000000) {
-        usleep(50000);
-        warnx("delayed by door!");
-    }
-#endif
+    request_stop();
 
-    _drop_time = hrt_absolute_time();
-
-    warnx("dropping now");
 }
 
 void
@@ -156,11 +199,10 @@ DropDeLeaves::run()
     _actuator_id = ORB_ID(actuator_controls_1);
     _actuator_pub = orb_advertise(_actuator_id, &_actuators);
 
-
+    _actuators.control[4] = 0.0f;
+    actuators_publish();
 
     rc_channels_poll();
-
-
 
     /* wakeup source */
     px4_pollfd_struct_t poll_fds = {};
@@ -193,7 +235,7 @@ DropDeLeaves::run()
 
         /* run controller on gyro changes */
         if (poll_fds.revents & POLLIN) {
-            const hrt_abstime now = hrt_absolute_time();
+            now = hrt_absolute_time();
             float dt = (now - last_run) / 1e6f;
             last_run = now;
 
@@ -207,18 +249,17 @@ DropDeLeaves::run()
 
             rc_channels_poll();
 
-            if ((int)_rc_channels.channels[9] == 1) {
+            // Check the last and the current value of the drop switch
+            drop_switch_state();
+
+            // Check if they have 5 state change of the drop switch in less than 1.5 sec.
+            check_2_drop();
+
+            // Activate drop mechanism if needed
+            if (_flg_drop5 == 1) {
                 drop();
-            } else {
-                _actuators.control[4] = 0.0f;
             }
-
-
-
-            orb_publish(_actuator_id, _actuator_pub, &_actuators);
         }
-
-//        request_stop();
 
         perf_end(_loop_perf);
     }
