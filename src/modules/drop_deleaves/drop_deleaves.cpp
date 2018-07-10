@@ -186,7 +186,7 @@ DropDeLeaves::drop()
     _actuators.control[4] = 0.0f;
     actuators_publish();
 
-    request_stop();
+    //request_stop();
 
 }
 
