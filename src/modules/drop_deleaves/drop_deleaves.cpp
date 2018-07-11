@@ -179,7 +179,7 @@ DropDeLeaves::drop()
     warnx("drop system activated");
 
     // Delay for mechanism to be drop
-    usleep(3000000);
+    usleep(4000000);
 
     warnx("dropping ended");
 
