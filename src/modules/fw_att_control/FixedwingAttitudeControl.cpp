@@ -848,7 +848,7 @@ void FixedwingAttitudeControl::run()
                                 _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-                                if(hrt_absolute_time() - present_time >= (int)_parameters.take_off_custom_time_01) //
+                                if(hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_01) //
                                 {
                                     warnx("Etienne Start");
                                     present_time = hrt_absolute_time();
@@ -897,7 +897,7 @@ void FixedwingAttitudeControl::run()
                                 _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-                                if (hrt_absolute_time() - present_time >=	(int) _parameters.take_off_custom_time_03) // 2 sec
+                                if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03) // 2 sec
                                 {
                                     warnx("Transit to NoseDown Control");
                                     present_time = hrt_absolute_time();
@@ -934,8 +934,7 @@ void FixedwingAttitudeControl::run()
                                 _actuators_airframe.control[2] = ( - _att.yawspeed*_parameters.take_off_climbing_yawrate_kp) + _parameters.take_off_rudder_offset;
                                 _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr*_parameters.take_off_climbing_roll_kp - _att.rollspeed*_parameters.take_off_climbing_roll_kd) + _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
-                                if (hrt_absolute_time() - present_time >=
-                                    (int) _parameters.take_off_custom_time_04) // 120 ms
+                                if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
                                 {
                                     warnx("Transit to Px4 Control");
                                     present_time = hrt_absolute_time();
