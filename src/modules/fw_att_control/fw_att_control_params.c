@@ -41,6 +41,196 @@
  */
 
 /*
+ * Custom parameters for aquatic takeoff of the Suwave
+ *
+ */
+
+/**
+ * Custom takeoff timing: timing 01 for Wait Time
+ *
+ *
+ * @unit s
+ * @min 0.0
+ * @max 10000000.0
+ * @decimal 0
+ * @increment 1
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_WAIT_TIME, 200000.0f);
+
+/**
+ * Custom takeoff timing: timing 03 for Rise Time
+ *
+ *
+ * @unit s
+ * @min 0.0
+ * @max 10000000.0
+ * @decimal 0
+ * @increment 1
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_RISE_TIME, 2000000.0f);
+
+/**
+ * Custom takeoff timing: timing 04 for Climb Time
+ *
+ *
+ * @unit s
+ * @min 0.0
+ * @max 10000000.0
+ * @decimal 0
+ * @increment 1
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_CLIMB_TIME, 2000000.0f);
+
+/**
+ * Custom takeoff trim: Prop servo, horizontal position
+ *
+ *
+ * @unit s
+ * @min -10.0
+ * @max 10.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_PROP_HORI, 0.0f);
+
+/**
+ * Custom takeoff trim: Prop servo, vertical position
+ *
+ *
+ * @unit s
+ * @min -10.0
+ * @max 10.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_PROP_VERT, 1.0f);
+
+/**
+ * Custom takeoff trim: Rudder servo, neutral position
+ *
+ *
+ * @unit s
+ * @min -10.0
+ * @max 10.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_RUDDER_OFF, 0.0f);
+
+/**
+ * Custom takeoff controller : Rise sequence, Kp on pitch error
+ *
+ *
+ * @min 0.0
+ * @max 2.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_RISE_PITCH_KP, 1.00f);
+
+/**
+ * Custom takeoff controller : Rise sequence, Kd on pitch error
+*
+*
+* @min 0.0
+* @max 2.0
+* @decimal 3
+* @increment 0.001
+* @group FW Attitude Control
+*/
+PARAM_DEFINE_FLOAT(TK_RISE_PITCH_KD, 0.10f);
+
+/**
+ * Custom takeoff controller : Rise sequence, Kp on yaw error
+ *
+ *
+ * @min -10.0
+ * @max 10.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_RISE_YAW_KP, 2.00f);
+
+/**
+ * Custom takeoff controller : Rise sequence, Kd on yaw error
+*
+*
+* @min -10.0
+* @max 10.0
+* @decimal 3
+* @increment 0.001
+* @group FW Attitude Control
+*/
+PARAM_DEFINE_FLOAT(TK_RISE_YAW_KD, 0.00f);
+
+/**
+ * Custom takeoff controller : Climb sequence, Kd on pitch error
+ *
+ *
+ * @min -3.0
+ * @max  3.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_CLB_PITCH_KP, 0.30f);
+
+/**
+ * Custom takeoff controller : Climb sequence, Kd on pitch error
+*
+*
+* @min -3.0
+* @max  3.0
+* @decimal 3
+* @increment 0.001
+* @group FW Attitude Control
+*/
+PARAM_DEFINE_FLOAT(TK_CLB_PITCH_KD, 0.02f);
+/**
+ * Custom takeoff controller : Climb sequence, Kd on roll error
+ *
+ *
+ * @min -1000.0
+ * @max  1000.0
+ * @decimal 3
+ * @increment 0.001
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_CLB_ROLL_KP, 2.000f);
+
+/**
+ * Custom takeoff controller : Climb sequence, Kd on roll error
+*
+*
+ * @min -1000.0
+ * @max  1000.0
+ * @decimal 3
+ * @increment 0.001
+ * @group FW Attitude Control
+*/
+PARAM_DEFINE_FLOAT(TK_CLB_ROLL_KD, 0.000f);
+
+/**
+ * Custom takeoff controller : Climb sequence, Kp on yaw rate error
+*
+*
+ * @min -3.0
+ * @max  3.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+*/
+PARAM_DEFINE_FLOAT(TK_CLB_YAWRAT_KP, 0.40f);
+
+/*
  * Controller parameters, accessible via MAVLink
  *
  */
