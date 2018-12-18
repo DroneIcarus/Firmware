@@ -211,6 +211,19 @@ private:
         float take_off_custom_time_01;
         float take_off_custom_time_03;
         float take_off_custom_time_04;
+        float take_off_prop_horizontal;
+        float take_off_prop_vertical;
+        float take_off_rudder_offset;
+        float take_off_rising_pitch_kp;
+        float take_off_rising_pitch_kd;
+        float take_off_rising_yaw_kp;
+        float take_off_rising_yaw_kd;
+        float take_off_climbing_pitch_kp;
+        float take_off_climbing_pitch_kd;
+        float take_off_climbing_roll_kp;
+        float take_off_climbing_roll_kd;
+        float take_off_climbing_yawrate_kp;
+
         /// <======= ///////////////////////////////////////////////////////////////////////
 
     } _parameters{};			/**< local copies of interesting parameters */
@@ -287,6 +300,18 @@ private:
         param_t take_off_custom_time_01;
         param_t take_off_custom_time_03;
         param_t take_off_custom_time_04;
+        param_t take_off_prop_horizontal;
+        param_t take_off_prop_vertical;
+        param_t take_off_rudder_offset;
+        param_t take_off_rising_pitch_kp;
+        param_t take_off_rising_pitch_kd;
+        param_t take_off_rising_yaw_kp;
+        param_t take_off_rising_yaw_kd;
+        param_t take_off_climbing_pitch_kp;
+        param_t take_off_climbing_pitch_kd;
+        param_t take_off_climbing_roll_kp;
+        param_t take_off_climbing_roll_kd;
+        param_t take_off_climbing_yawrate_kp;
 
         /// <======= ////////////////////////////////////////////////////////////////////
 

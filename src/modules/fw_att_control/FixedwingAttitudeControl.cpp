@@ -119,6 +119,18 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
     _parameter_handles.take_off_custom_time_01 = param_find("ToChange");
     _parameter_handles.take_off_custom_time_03 = param_find("ToChange");
     _parameter_handles.take_off_custom_time_04 = param_find("ToChange");
+    _parameter_handles.take_off_prop_horizontal= param_find("ToChange");
+    _parameter_handles.take_off_prop_vertical= param_find("ToChange");
+    _parameter_handles.take_off_rudder_offset= param_find("ToChange");
+    _parameter_handles.take_off_rising_pitch_kp= param_find("ToChange");
+    _parameter_handles.take_off_rising_pitch_kd= param_find("ToChange");
+    _parameter_handles.take_off_rising_yaw_kp= param_find("ToChange");
+    _parameter_handles.take_off_rising_yaw_kd= param_find("ToChange");
+    _parameter_handles.take_off_climbing_pitch_kp= param_find("ToChange");
+    _parameter_handles.take_off_climbing_pitch_kd= param_find("ToChange");
+    _parameter_handles.take_off_climbing_roll_kp= param_find("ToChange");
+    _parameter_handles.take_off_climbing_roll_kd= param_find("ToChange");
+    _parameter_handles.take_off_climbing_yawrate_kp= param_find("ToChange");
 
     /// <======= ////////////////////////////////////////////////////////////////////
 
@@ -220,6 +232,19 @@ FixedwingAttitudeControl::parameters_update()
     param_get(_parameter_handles.take_off_custom_time_01, &_parameters.take_off_custom_time_01);
     param_get(_parameter_handles.take_off_custom_time_03, &_parameters.take_off_custom_time_03);
     param_get(_parameter_handles.take_off_custom_time_04, &_parameters.take_off_custom_time_04);
+
+    param_get(_parameter_handles.take_off_prop_horizontal, &_parameters.take_off_prop_horizontal);
+    param_get(_parameter_handles.take_off_prop_vertical, &_parameters.take_off_prop_vertical);
+    param_get(_parameter_handles.take_off_rudder_offset, &_parameters.take_off_rudder_offset);
+    param_get(_parameter_handles.take_off_rising_pitch_kp, &_parameters.take_off_rising_pitch_kp);
+    param_get(_parameter_handles.take_off_rising_pitch_kd, &_parameters.take_off_rising_pitch_kd);
+    param_get(_parameter_handles.take_off_rising_yaw_kp, &_parameters.take_off_rising_yaw_kp);
+    param_get(_parameter_handles.take_off_rising_yaw_kd, &_parameters.take_off_rising_yaw_kd);
+    param_get(_parameter_handles.take_off_climbing_pitch_kp, &_parameters.take_off_climbing_pitch_kp);
+    param_get(_parameter_handles.take_off_climbing_pitch_kd, &_parameters.take_off_climbing_pitch_kd);
+    param_get(_parameter_handles.take_off_climbing_roll_kp, &_parameters.take_off_climbing_roll_kp);
+    param_get(_parameter_handles.take_off_climbing_roll_kd, &_parameters.take_off_climbing_roll_kd);
+    param_get(_parameter_handles.take_off_climbing_yawrate_kp, &_parameters.take_off_climbing_yawrate_kp);
     /// <======= ////////////////////////////////////////////////////////////////////
 
 	if (_vehicle_status.is_vtol) {
@@ -793,7 +818,7 @@ void FixedwingAttitudeControl::run()
 
                         if(!_att_sp.decollage_custom && !mode_take_off_custom)
                         {
-                            _actuators_airframe.control[1] = _parameters.take_off_horizontal_pos;
+                            _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
                             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
 
                             present_time = hrt_absolute_time();
@@ -812,13 +837,13 @@ void FixedwingAttitudeControl::run()
 
                         /* Sequences of the controller for the custom takeoff */
                         if(mode_take_off_custom)   {
-                            float r2servo = (_parameters.take_off_up_pos - _parameters.take_off_horizontal_pos) / (3.14159f / 2);
+                            float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
 
                             // 1 - WAIT AVANT LA SEQUENCE (FALCULTATIF)
                             if(mode_seq1)
                             {
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
-                                _actuators_airframe.control[1] = _parameters.take_off_horizontal_pos; //0.28f;
+                                _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal; //0.28f;
                                 _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
                                 _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
@@ -836,7 +861,7 @@ void FixedwingAttitudeControl::run()
                             if(mode_seq2)
                             {
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
-                                _actuators_airframe.control[1] = _parameters.take_off_up_pos;
+                                _actuators_airframe.control[1] = _parameters.take_off_prop_vertical;
                                 _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
                                 _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
@@ -867,8 +892,8 @@ void FixedwingAttitudeControl::run()
 //                                    _countPrint = 0;
 //                                }
 
-                                _actuators_airframe.control[1] = (_parameters.take_off_pitch_kp*_eulAtt2Des(1) - _parameters.take_off_pitch_kd*_att.pitchspeed) * r2servo + _parameters.take_off_horizontal_pos;
-                                _actuators_airframe.control[2] = (_parameters.take_off_yaw_kp*_eulAtt2Des(2) - _parameters.take_off_yaw_kd*_att.yawspeed)+_parameters.take_off_rudder_offset;
+                                _actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp*_eulAtt2Des(1) - _parameters.take_off_rising_pitch_kd*_att.pitchspeed) * r2servo + _parameters.take_off_prop_horizontal;
+                                _actuators_airframe.control[2] = (_parameters.take_off_rising_yaw_kp*_eulAtt2Des(2) - _parameters.take_off_rising_yaw_kd*_att.yawspeed)+_parameters.take_off_rudder_offset;
                                 _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
@@ -905,9 +930,9 @@ void FixedwingAttitudeControl::run()
 //								float   _yawErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(2) + _qAtt2Des(0) * _qAtt2Des(3)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(3) * _qAtt2Des(3)));
 
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-                                _actuators_airframe.control[1] = (_pitchErr*_parameters.take_off_nosePitch_kp -_att.pitchspeed*_parameters.take_off_nosePitch_kd) * r2servo + _parameters.take_off_horizontal_pos;
-                                _actuators_airframe.control[2] = ( - _att.yawspeed*_parameters.take_off_noseYawRate_kp) + _parameters.take_off_rudder_offset;
-                                _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr*_parameters.take_off_noseRoll_kp - _att.rollspeed*_parameters.take_off_noseRoll_kd) + _parameters.trim_roll;
+                                _actuators_airframe.control[1] = (_pitchErr*_parameters.take_off_climbing_pitch_kp -_att.pitchspeed*_parameters.take_off_climbing_pitch_kd) * r2servo + _parameters.take_off_prop_horizontal;
+                                _actuators_airframe.control[2] = ( - _att.yawspeed*_parameters.take_off_climbing_yawrate_kp) + _parameters.take_off_rudder_offset;
+                                _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr*_parameters.take_off_climbing_roll_kp - _att.rollspeed*_parameters.take_off_climbing_roll_kd) + _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
                                 if (hrt_absolute_time() - present_time >=
                                     (int) _parameters.take_off_custom_time_04) // 120 ms
