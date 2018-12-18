@@ -114,6 +114,14 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_parameter_handles.bat_scale_en = param_find("FW_BAT_SCALE_EN");
 	_parameter_handles.airspeed_mode = param_find("FW_ARSP_MODE");
 
+    /// ========> ////////////////////////////////////////////////////////////////////
+    // Etienne - Suwave custom parameters for vertical aquatic takeoff
+    _parameter_handles.take_off_custom_time_01 = param_find("ToChange");
+    _parameter_handles.take_off_custom_time_03 = param_find("ToChange");
+    _parameter_handles.take_off_custom_time_04 = param_find("ToChange");
+
+    /// <======= ////////////////////////////////////////////////////////////////////
+
 	// initialize to invalid VTOL type
 	_parameters.vtol_type = -1;
 
@@ -206,6 +214,13 @@ FixedwingAttitudeControl::parameters_update()
 	param_get(_parameter_handles.flaperon_scale, &_parameters.flaperon_scale);
 
 	param_get(_parameter_handles.rattitude_thres, &_parameters.rattitude_thres);
+
+    /// ========> ////////////////////////////////////////////////////////////////////
+    // Etienne - Suwave custom parameters for vertical aquatic takeoff
+    param_get(_parameter_handles.take_off_custom_time_01, &_parameters.take_off_custom_time_01);
+    param_get(_parameter_handles.take_off_custom_time_03, &_parameters.take_off_custom_time_03);
+    param_get(_parameter_handles.take_off_custom_time_04, &_parameters.take_off_custom_time_04);
+    /// <======= ////////////////////////////////////////////////////////////////////
 
 	if (_vehicle_status.is_vtol) {
 		param_get(_parameter_handles.vtol_type, &_parameters.vtol_type);
@@ -441,11 +456,10 @@ void FixedwingAttitudeControl::run()
     /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
     // Etienne et Étienne
 
-    static bool mode_seq0 = false;
+    static bool mode_seq1 = false;
     static bool mode_seq2 = false;
-    static bool mode_seq7 = false;
-    static bool mode_seq8 = false;
-    static bool mode_seq9 = false;
+    static bool mode_seq3 = false;
+    static bool mode_seq4 = false;
     static bool mode_take_off_custom = false;
 
     static int present_time = hrt_absolute_time(); // timer pour les etapes du decollage
@@ -784,25 +798,24 @@ void FixedwingAttitudeControl::run()
 
                             present_time = hrt_absolute_time();
 
-                            mode_seq0 = false;
+                            mode_seq1 = false;
                             mode_seq2 = false;
-                            mode_seq7 = false;
-                            mode_seq8 = false;
-                            mode_seq9 = false;
+                            mode_seq3 = false;
+                            mode_seq4 = false;
 
                         }
                         else if(_att_sp.decollage_custom && !mode_take_off_custom) // il y a un decolage custom -> on active le flag qui permet d'effectuer la séquence
                         {
                             mode_take_off_custom = true;
-                            mode_seq0 = true;
+                            mode_seq1 = true;
                         }
 
                         /* Sequences of the controller for the custom takeoff */
                         if(mode_take_off_custom)   {
                             float r2servo = (_parameters.take_off_up_pos - _parameters.take_off_horizontal_pos) / (3.14159f / 2);
 
-                            // WAIT AVANT LA SEQUENCE (FALCULTATIF)
-                            if(mode_seq0)
+                            // 1 - WAIT AVANT LA SEQUENCE (FALCULTATIF)
+                            if(mode_seq1)
                             {
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
                                 _actuators_airframe.control[1] = _parameters.take_off_horizontal_pos; //0.28f;
@@ -814,12 +827,12 @@ void FixedwingAttitudeControl::run()
                                 {
                                     warnx("Etienne Start");
                                     present_time = hrt_absolute_time();
-                                    mode_seq0 = false;
+                                    mode_seq1 = false;
                                     mode_seq2 = true;
                                 }
                             }
 
-                            // ACTIVE LE SERVO POUR REMONTER LE PIVOT
+                            // 2 - ACTIVE LE SERVO POUR REMONTER LE PIVOT
                             if(mode_seq2)
                             {
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
@@ -833,13 +846,13 @@ void FixedwingAttitudeControl::run()
                                     warnx("Transit to TakeOff Control");
                                     present_time = hrt_absolute_time();
                                     mode_seq2 = false;
-                                    mode_seq7 = true;
+                                    mode_seq3 = true;
                                 }
                             }
 
-                            // GAB : IDLE DU THRUST A 30% PENDANT UN CERTAIN TEMPS ==> Etienne Edit : Debut du full throttle et du controleur
+                            // 3 - Vertical takeoff cControl
 
-                            if (mode_seq7) {
+                            if (mode_seq3) {
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
 
                                 _eulDes = matrix::Eulerf(0.0f, 0.0f, 0.0f);
@@ -859,16 +872,16 @@ void FixedwingAttitudeControl::run()
                                 _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-                                if (hrt_absolute_time() - present_time >=	(int) _parameters.take_off_custom_time_08) // 2 sec
+                                if (hrt_absolute_time() - present_time >=	(int) _parameters.take_off_custom_time_03) // 2 sec
                                 {
                                     warnx("Transit to NoseDown Control");
                                     present_time = hrt_absolute_time();
-                                    mode_seq7 = false;
-                                    mode_seq8 = true;
+                                    mode_seq3 = false;
+                                    mode_seq4 = true;
                                 }
                             }
-                            // FULL THROTTLE PENDANT UN CERTAIN TEMPS
-                            if (mode_seq8) {
+                            // 4 - NoseDown Control
+                            if (mode_seq4) {
 
                                 float _elevDes = 20.0f*D2R;
                                 // Present attitude from Quaternion to Euler ZXY
@@ -891,40 +904,18 @@ void FixedwingAttitudeControl::run()
                                 float  _rollErr = asinf(-2.0f * (_qAtt2Des(2) * _qAtt2Des(3) - _qAtt2Des(0) * _qAtt2Des(1)));
 //								float   _yawErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(2) + _qAtt2Des(0) * _qAtt2Des(3)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(3) * _qAtt2Des(3)));
 
-                                //Boucle pour le print et l'incrementation de l'indice compteur
-                                /*if (++_countPrint >= 200)
-                                {
-                                    warn("Error Calc YXZ : %0.3f , %0.3f , %0.3f", (double)(_pitchErr*R2D), (double)(_rollErr*R2D), (double)(_yawErr*R2D));
-                                    _countPrint = 0;
-                                }*/
-
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
                                 _actuators_airframe.control[1] = (_pitchErr*_parameters.take_off_nosePitch_kp -_att.pitchspeed*_parameters.take_off_nosePitch_kd) * r2servo + _parameters.take_off_horizontal_pos;
                                 _actuators_airframe.control[2] = ( - _att.yawspeed*_parameters.take_off_noseYawRate_kp) + _parameters.take_off_rudder_offset;
                                 _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr*_parameters.take_off_noseRoll_kp - _att.rollspeed*_parameters.take_off_noseRoll_kd) + _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
                                 if (hrt_absolute_time() - present_time >=
-                                    (int) _parameters.take_off_custom_time_09) // 120 ms
+                                    (int) _parameters.take_off_custom_time_04) // 120 ms
                                 {
                                     warnx("Transit to Px4 Control");
                                     present_time = hrt_absolute_time();
-                                    mode_seq8 = false;
-                                    mode_seq9 = true;
-                                }
-                            }
-                            //MAINTIENT FULL THROTTLE POUR UN CERTAIN TEMPS
-                            if(mode_seq9)
-                            {
-                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-                                _actuators_airframe.control[1] = _parameters.take_off_horizontal_pos; //0.28f;
-                                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
-
-                                if(hrt_absolute_time() - present_time >= (int)_parameters.take_off_custom_time_11) // 2 sec
-                                {
-                                    present_time = hrt_absolute_time();
-                                    mode_seq9 = false;
+                                    mode_seq4 = false;
                                     mode_take_off_custom = false;
-
                                 }
                             }
                         }
