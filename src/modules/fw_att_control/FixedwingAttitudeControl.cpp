@@ -232,7 +232,6 @@ FixedwingAttitudeControl::parameters_update()
     param_get(_parameter_handles.take_off_custom_time_01, &_parameters.take_off_custom_time_01);
     param_get(_parameter_handles.take_off_custom_time_03, &_parameters.take_off_custom_time_03);
     param_get(_parameter_handles.take_off_custom_time_04, &_parameters.take_off_custom_time_04);
-
     param_get(_parameter_handles.take_off_prop_horizontal, &_parameters.take_off_prop_horizontal);
     param_get(_parameter_handles.take_off_prop_vertical, &_parameters.take_off_prop_vertical);
     param_get(_parameter_handles.take_off_rudder_offset, &_parameters.take_off_rudder_offset);

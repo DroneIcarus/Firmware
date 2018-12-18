@@ -301,6 +301,13 @@ private:
 		float land_airspeed_scale;
 		float land_throtTC_scale;
 
+		/// ========> ////////////////////////////////////////////////////////////////////
+		// Etienne - Suwave custom parameters for vertical aquatic takeoff
+		float take_off_custom_time_01;
+		float take_off_custom_time_03;
+		float take_off_custom_time_04;
+		/// <======= ///////////////////////////////////////////////////////////////////////
+
 		// VTOL
 		float airspeed_trans;
 		int32_t vtol_type;
@@ -365,6 +372,13 @@ private:
 		param_t land_early_config_change;
 		param_t land_airspeed_scale;
 		param_t land_throtTC_scale;
+
+		/// ========> ////////////////////////////////////////////////////////////////////
+		// Etienne - Suwave custom parameters for vertical aquatic takeoff
+		param_t take_off_custom_time_01;
+		param_t take_off_custom_time_03;
+		param_t take_off_custom_time_04;
+		/// <======= ////////////////////////////////////////////////////////////////////
 
 		param_t vtol_type;
 	} _parameter_handles {};				///< handles for interesting parameters */

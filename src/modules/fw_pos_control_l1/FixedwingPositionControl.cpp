@@ -97,6 +97,13 @@ FixedwingPositionControl::FixedwingPositionControl() :
 	_parameter_handles.heightrate_ff = param_find("FW_T_HRATE_FF");
 	_parameter_handles.speedrate_p = param_find("FW_T_SRATE_P");
 
+	/// ========> ////////////////////////////////////////////////////////////////////
+	// Etienne - Suwave custom parameters for vertical aquatic takeoff
+	_parameter_handles.take_off_custom_time_01 = param_find("TK_WAIT_TIME");
+	_parameter_handles.take_off_custom_time_03 = param_find("TK_RISE_TIME");
+	_parameter_handles.take_off_custom_time_04 = param_find("TK_CLIMB_TIME");
+	/// <======= ////////////////////////////////////////////////////////////////////
+
 	// if vehicle is vtol these handles will be set when we get the vehicle status
 	_parameter_handles.airspeed_trans = PARAM_INVALID;
 	_parameter_handles.vtol_type = PARAM_INVALID;
@@ -152,6 +159,13 @@ FixedwingPositionControl::parameters_update()
 	param_get(_parameter_handles.land_early_config_change, &(_parameters.land_early_config_change));
 	param_get(_parameter_handles.land_airspeed_scale, &(_parameters.land_airspeed_scale));
 	param_get(_parameter_handles.land_throtTC_scale, &(_parameters.land_throtTC_scale));
+
+	/// ========> ////////////////////////////////////////////////////////////////////
+	// Etienne - Suwave custom parameters for vertical aquatic takeoff
+	param_get(_parameter_handles.take_off_custom_time_01, &_parameters.take_off_custom_time_01);
+	param_get(_parameter_handles.take_off_custom_time_03, &_parameters.take_off_custom_time_03);
+	param_get(_parameter_handles.take_off_custom_time_04, &_parameters.take_off_custom_time_04);
+	/// <======= ////////////////////////////////////////////////////////////////////
 
 	// VTOL parameter VTOL_TYPE
 	if (_parameter_handles.vtol_type != PARAM_INVALID) {
@@ -1245,6 +1259,15 @@ void
 FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector2f &ground_speed,
 		const position_setpoint_s &pos_sp_prev, const position_setpoint_s &pos_sp_curr)
 {
+	/// ========> ////////////////////////////////////////////////////////////////////
+	// Etienne - Settings to enable Attitude Control for vertical takeoff for TakeOff waypoint
+	static int time_begin_take_off = 0;
+	static bool flag_message_takeoff_normal = false;
+	static bool flag_message_takeoff_custom = false;
+	float total_time_takeoff = _parameters.take_off_custom_time_01 + 1000000.0f + _parameters.take_off_custom_time_03 + _parameters.take_off_custom_time_04;
+
+	/// <======== ////////////////////////////////////////////////////////////////////
+
 	/* current waypoint (the one currently heading for) */
 	Vector2f curr_wp((float)pos_sp_curr.lat, (float)pos_sp_curr.lon);
 	Vector2f prev_wp{0.0f, 0.0f}; /* previous waypoint */
@@ -1271,6 +1294,16 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		_launchDetector.reset();
 		_launch_detection_state = LAUNCHDETECTION_RES_NONE;
 		_launch_detection_notify = 0;
+
+		/// ========> ////////////////////////////////////////////////////////////////////
+		// Etienne - Settings to enable Attitude Control for vertical takeoff for TakeOff waypoint
+		time_begin_take_off = hrt_absolute_time();
+		_att_sp.decollage_custom = false;
+
+		flag_message_takeoff_normal = false;
+		flag_message_takeoff_custom = false;
+		/// <======== ////////////////////////////////////////////////////////////////////
+
 	}
 
 	if (_runway_takeoff.runwayTakeoffEnabled()) {
@@ -1316,6 +1349,46 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		_att_sp.yaw_body = _runway_takeoff.getYaw(_l1_control.nav_bearing());
 		_att_sp.fw_control_yaw = _runway_takeoff.controlYaw();
 		_att_sp.pitch_body = _runway_takeoff.getPitch(get_tecs_pitch());
+
+		/// ========> ////////////////////////////////////////////////////////////////////
+		// Etienne - Sequence to enable Attitude Control for vertical takeoff for TakeOff waypoint
+
+		// attitude setpoint from standard Px4 controller
+		if(hrt_absolute_time() - time_begin_take_off >= (int)total_time_takeoff){
+			_att_sp.roll_body = _runway_takeoff.getRoll(_l1_control.get_roll_setpoint());
+			_att_sp.yaw_body = _runway_takeoff.getYaw(_l1_control.nav_bearing());
+			_att_sp.fw_control_yaw = _runway_takeoff.controlYaw();
+			_att_sp.pitch_body = _runway_takeoff.getPitch(get_tecs_pitch());
+
+			if(!flag_message_takeoff_normal)
+			{
+				mavlink_log_info(&_mavlink_log_pub,"take off normal");
+				warnx("take off normal");
+				flag_message_takeoff_normal = true;
+			}
+
+			_att_sp.decollage_custom = false;
+		}
+		// attitude setpoint lors du decollage custom du drone aquatique
+		else if((hrt_absolute_time() - time_begin_take_off < (int)total_time_takeoff) && _control_mode.flag_armed) {
+
+			if(!flag_message_takeoff_custom)
+			{
+				mavlink_log_info(&_mavlink_log_pub,"take off custom");
+				warnx("take off custom");
+				flag_message_takeoff_custom = true;
+			}
+
+			_att_sp.roll_body = _runway_takeoff.getRoll(_l1_control.get_roll_setpoint());
+			_att_sp.yaw_body = _runway_takeoff.getYaw(_l1_control.nav_bearing());
+			_att_sp.fw_control_yaw = _runway_takeoff.controlYaw();
+			_att_sp.pitch_body = _runway_takeoff.getPitch(get_tecs_pitch());
+
+			_att_sp.decollage_custom = true;
+		}
+
+
+		/// <======= ////////////////////////////////////////////////////////////////////
 
 		// reset integrals except yaw (which also counts for the wheel controller)
 		_att_sp.roll_reset_integral = _runway_takeoff.resetIntegrators();
