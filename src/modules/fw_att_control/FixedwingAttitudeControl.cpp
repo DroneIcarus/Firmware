@@ -436,7 +436,7 @@ void FixedwingAttitudeControl::run()
 	fds[0].events = POLLIN;
 
     /////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////====================================>
 
     /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
     // Etienne et Étienne
@@ -453,12 +453,12 @@ void FixedwingAttitudeControl::run()
     matrix::Eulerf _eulDes;
     matrix::Quatf _qDes;
     matrix::Quatf _qAtt2Des;
-    matrix::Quatf _qAtt;
-    matrix::Eulerf _EulAtt2Des;
+    matrix::Quatf _qAtt = _att.q;
+    matrix::Eulerf _eulAtt2Des;
     float R2D = 57.29578;
     float D2R = 1/R2D;
 
-    /////////////////////////////////////////////////////////////////////////////////////////////
+    ////<======================///////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////
 
 	while (!should_exit()) {
@@ -770,7 +770,7 @@ void FixedwingAttitudeControl::run()
 						}
 
                         /////////////////////////////////////////////////////////////////////////////////////////////
-                        /////////////////////////////////////////////////////////////////////////////////////////////
+                        ////////////////////===========>
 
                         /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
                         // Etienne et Étienne
@@ -798,8 +798,7 @@ void FixedwingAttitudeControl::run()
                         }
 
                         /* Sequences of the controller for the custom takeoff */
-                        if(mode_take_off_custom)
-                        {
+                        if(mode_take_off_custom)   {
                             float r2servo = (_parameters.take_off_up_pos - _parameters.take_off_horizontal_pos) / (3.14159f / 2);
 
                             // WAIT AVANT LA SEQUENCE (FALCULTATIF)
@@ -842,15 +841,12 @@ void FixedwingAttitudeControl::run()
 
                             if (mode_seq7) {
                                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+
                                 _eulDes = matrix::Eulerf(0.0f, 0.0f, 0.0f);
+                                _qDes = matrix::Quatf(_eulDes);
+                                _qAtt2Des = _qAtt.inversed() * _qDes;
+                                _eulAtt2Des = _qAtt2Des;
 
-                                Quaternion(const Euler<Type> &euler)
-                                matrix::Dcmf R = matrix::Quatf(_att.q);
-
-                                _qDes.from_euler(0.0f, _parameters.take_off_custom_pitch, 0.0f);
-                                _qAtt = _att.q;
-                                _qAtt2Des = _qAtt.conjugated() * _qDes;
-                                _EulAtt2Des = _qAtt2Des.to_euler();
                                 //Boucle pour le print et l'incrementation de l'indice compteur
 //                                if (++_countPrint >= 200)
 //                                {
@@ -858,8 +854,8 @@ void FixedwingAttitudeControl::run()
 //                                    _countPrint = 0;
 //                                }
 
-                                _actuators_airframe.control[1] = (_parameters.take_off_pitch_kp*_EulAtt2Des(1) - _parameters.take_off_pitch_kd*_ctrl_state.pitch_rate) * r2servo + _parameters.take_off_horizontal_pos;
-                                _actuators_airframe.control[2] = (_parameters.take_off_yaw_kp*_EulAtt2Des(2) - _parameters.take_off_yaw_kd*_ctrl_state.yaw_rate)+_parameters.take_off_rudder_offset;
+                                _actuators_airframe.control[1] = (_parameters.take_off_pitch_kp*_eulAtt2Des(1) - _parameters.take_off_pitch_kd*_att.pitchspeed) * r2servo + _parameters.take_off_horizontal_pos;
+                                _actuators_airframe.control[2] = (_parameters.take_off_yaw_kp*_eulAtt2Des(2) - _parameters.take_off_yaw_kd*_att.yawspeed)+_parameters.take_off_rudder_offset;
                                 _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
                                 _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
@@ -871,15 +867,69 @@ void FixedwingAttitudeControl::run()
                                     mode_seq8 = true;
                                 }
                             }
+                            // FULL THROTTLE PENDANT UN CERTAIN TEMPS
+                            if (mode_seq8) {
+
+                                float _elevDes = 20.0f*D2R;
+                                // Present attitude from Quaternion to Euler ZXY
+                                float _headingNow = atan2f(-2.0f * (_qAtt(1) * _qAtt(2) - _qAtt(0) * _qAtt(3)), 1.0f - 2.0f * (_qAtt(1) * _qAtt(1) + _qAtt(3) * _qAtt(3)));
+                                float _bankNow = asinf(2.0f * (_qAtt(2) * _qAtt(3) + _qAtt(0) * _qAtt(1)));
+                                // Quaternion with the right heading and elevation from nose down movement of present attitude - From Euler Rotation ZXY to Quaternion
+                                float cang[3] = {cosf(_headingNow/2.0f) , cosf(_bankNow/2.0f) , cosf(_elevDes/cosf(_bankNow)/2.0f)};
+                                float sang[3] = {sinf(_headingNow/2.0f) , sinf(_bankNow/2.0f) , sinf(_elevDes/cosf(_bankNow)/2.0f)};
+                                matrix::Quatf _qElev;
+                                _qElev(0) = cang[0]*cang[1]*cang[2]-sang[0]*sang[1]*sang[2];
+                                _qElev(1) = cang[0]*sang[1]*cang[2]-sang[0]*cang[1]*sang[2];
+                                _qElev(2) = cang[0]*cang[1]*sang[2]+sang[0]*sang[1]*cang[2];
+                                _qElev(3) = cang[0]*sang[1]*sang[2]+sang[0]*cang[1]*cang[2];
+                                matrix::Eulerf _eulElev = _qElev;
+                                // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
+                                _eulDes = matrix::Eulerf(0.0f, _eulElev(1), _eulElev(2));
+                                _qDes = matrix::Quatf(_eulDes);
+                                // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
+                                float _pitchErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(3) + _qAtt2Des(0) * _qAtt2Des(2)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(2) * _qAtt2Des(2)));
+                                float  _rollErr = asinf(-2.0f * (_qAtt2Des(2) * _qAtt2Des(3) - _qAtt2Des(0) * _qAtt2Des(1)));
+//								float   _yawErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(2) + _qAtt2Des(0) * _qAtt2Des(3)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(3) * _qAtt2Des(3)));
+
+                                //Boucle pour le print et l'incrementation de l'indice compteur
+                                /*if (++_countPrint >= 200)
+                                {
+                                    warn("Error Calc YXZ : %0.3f , %0.3f , %0.3f", (double)(_pitchErr*R2D), (double)(_rollErr*R2D), (double)(_yawErr*R2D));
+                                    _countPrint = 0;
+                                }*/
+
+                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+                                _actuators_airframe.control[1] = (_pitchErr*_parameters.take_off_nosePitch_kp -_att.pitchspeed*_parameters.take_off_nosePitch_kd) * r2servo + _parameters.take_off_horizontal_pos;
+                                _actuators_airframe.control[2] = ( - _att.yawspeed*_parameters.take_off_noseYawRate_kp) + _parameters.take_off_rudder_offset;
+                                _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr*_parameters.take_off_noseRoll_kp - _att.rollspeed*_parameters.take_off_noseRoll_kd) + _parameters.trim_roll;
+                                _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+                                if (hrt_absolute_time() - present_time >=
+                                    (int) _parameters.take_off_custom_time_09) // 120 ms
+                                {
+                                    warnx("Transit to Px4 Control");
+                                    present_time = hrt_absolute_time();
+                                    mode_seq8 = false;
+                                    mode_seq9 = true;
+                                }
+                            }
+                            //MAINTIENT FULL THROTTLE POUR UN CERTAIN TEMPS
+                            if(mode_seq9)
+                            {
+                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+                                _actuators_airframe.control[1] = _parameters.take_off_horizontal_pos; //0.28f;
+                                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+
+                                if(hrt_absolute_time() - present_time >= (int)_parameters.take_off_custom_time_11) // 2 sec
+                                {
+                                    present_time = hrt_absolute_time();
+                                    mode_seq9 = false;
+                                    mode_take_off_custom = false;
+
+                                }
+                            }
                         }
 
-
-
-
-
-
-
-                        /////////////////////////////////////////////////////////////////////////////////////////////
+                        ///<===========================////////////////////////////////////////////////////////////////
                         /////////////////////////////////////////////////////////////////////////////////////////////
 
 
