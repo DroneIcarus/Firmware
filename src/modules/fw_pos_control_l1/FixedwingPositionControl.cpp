@@ -1857,9 +1857,6 @@ FixedwingPositionControl::run()
 
 			/* update parameters from storage */
 			parameters_update();
-
-            /* Etienne - Update custom takeoff time from updated parameters */
-            float total_time_takeoff = _parameters.take_off_custom_time_01 + 1000000.0f + _parameters.take_off_custom_time_03 + _parameters.take_off_custom_time_04;
         }
 
 		/* only run controller if position changed */
