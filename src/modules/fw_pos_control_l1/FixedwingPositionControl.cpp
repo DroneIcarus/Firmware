@@ -1215,7 +1215,14 @@ FixedwingPositionControl::control_position(const Vector2f &curr_pos, const Vecto
 	} else if (_control_mode_current == FW_POSCTRL_MODE_OTHER) {
 		_att_sp.thrust = min(_att_sp.thrust, _parameters.throttle_max);
 
-	} else {
+	}
+    /// ========> ////////////////////////////////////////////////////////////////////
+        // Etienne - If landing waypoint, motor is cut once the targeted waypoint is hit
+    else if (pos_sp_curr.type == position_setpoint_s::SETPOINT_TYPE_LAND) {
+        _att_sp.thrust = 0.0f;
+    }
+    /// <======= ////////////////////////////////////////////////////////////////////
+    else {
 		/* Copy thrust and pitch values from tecs */
 		if (_vehicle_land_detected.landed) {
 			// when we are landed state we want the motor to spin at idle speed
@@ -1260,7 +1267,7 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		const position_setpoint_s &pos_sp_prev, const position_setpoint_s &pos_sp_curr)
 {
 	/// ========> ////////////////////////////////////////////////////////////////////
-	// Etienne - Settings to enable Attitude Control for vertical takeoff for TakeOff waypoint
+	// Etienne - Settings to enable Attitude Control for custom vertical takeoff for TakeOff waypoint
 	static int time_begin_take_off = 0;
 	static bool flag_message_takeoff_normal = false;
 	static bool flag_message_takeoff_custom = false;
@@ -1351,10 +1358,10 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		_att_sp.pitch_body = _runway_takeoff.getPitch(get_tecs_pitch());
 
 		/// ========> ////////////////////////////////////////////////////////////////////
-		// Etienne - Sequence to enable Attitude Control for vertical takeoff for TakeOff waypoint
+		// Etienne - Sequence to enable Attitude Control for custom vertical takeoff for TakeOff waypoint
 
 		// attitude setpoint from standard Px4 controller
-		if(hrt_absolute_time() - time_begin_take_off >= (int)total_time_takeoff){
+		if(hrt_absolute_time() - time_begin_take_off >= total_time_takeoff){
 			_att_sp.roll_body = _runway_takeoff.getRoll(_l1_control.get_roll_setpoint());
 			_att_sp.yaw_body = _runway_takeoff.getYaw(_l1_control.nav_bearing());
 			_att_sp.fw_control_yaw = _runway_takeoff.controlYaw();
@@ -1370,7 +1377,7 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 			_att_sp.decollage_custom = false;
 		}
 		// attitude setpoint lors du decollage custom du drone aquatique
-		else if((hrt_absolute_time() - time_begin_take_off < (int)total_time_takeoff) && _control_mode.flag_armed) {
+		else if((hrt_absolute_time() - time_begin_take_off < total_time_takeoff) && _control_mode.flag_armed) {
 
 			if(!flag_message_takeoff_custom)
 			{
@@ -1850,7 +1857,10 @@ FixedwingPositionControl::run()
 
 			/* update parameters from storage */
 			parameters_update();
-		}
+
+            /* Etienne - Update custom takeoff time from updated parameters */
+            float total_time_takeoff = _parameters.take_off_custom_time_01 + 1000000.0f + _parameters.take_off_custom_time_03 + _parameters.take_off_custom_time_04;
+        }
 
 		/* only run controller if position changed */
 		if ((fds[0].revents & POLLIN) != 0) {

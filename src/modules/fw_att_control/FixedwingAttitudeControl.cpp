@@ -946,32 +946,36 @@ void FixedwingAttitudeControl::run()
                         ///<===========================////////////////////////////////////////////////////////////////
                         /////////////////////////////////////////////////////////////////////////////////////////////
 
+                        /* If no custom takeoof, throttle comes from PositionController through _att_sp.thrust*/
+                        else {
 
+                            /* throttle passed through if it is finite and if no engine failure was detected */
+                            _actuators.control[actuator_controls_s::INDEX_THROTTLE] = (PX4_ISFINITE(_att_sp.thrust)
+                                                                                       &&
+                                                                                       !_vehicle_status.engine_failure)
+                                                                                      ? _att_sp.thrust : 0.0f;
 
+                            /* scale effort by battery status */
+                            if (_parameters.bat_scale_en &&
+                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] > 0.1f) {
 
-                        /* throttle passed through if it is finite and if no engine failure was detected */
-						_actuators.control[actuator_controls_s::INDEX_THROTTLE] = (PX4_ISFINITE(_att_sp.thrust)
-								&& !_vehicle_status.engine_failure) ? _att_sp.thrust : 0.0f;
+                                bool updated = false;
+                                orb_check(_battery_status_sub, &updated);
 
-						/* scale effort by battery status */
-						if (_parameters.bat_scale_en &&
-						    _actuators.control[actuator_controls_s::INDEX_THROTTLE] > 0.1f) {
+                                if (updated) {
+                                    battery_status_s battery_status = {};
 
-							bool updated = false;
-							orb_check(_battery_status_sub, &updated);
+                                    if (orb_copy(ORB_ID(battery_status), _battery_status_sub, &battery_status) ==
+                                        PX4_OK) {
+                                        if (battery_status.scale > 0.0f) {
+                                            _battery_scale = battery_status.scale;
+                                        }
+                                    }
+                                }
 
-							if (updated) {
-								battery_status_s battery_status = {};
-
-								if (orb_copy(ORB_ID(battery_status), _battery_status_sub, &battery_status) == PX4_OK) {
-									if (battery_status.scale > 0.0f) {
-										_battery_scale = battery_status.scale;
-									}
-								}
-							}
-
-							_actuators.control[actuator_controls_s::INDEX_THROTTLE] *= _battery_scale;
-						}
+                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] *= _battery_scale;
+                            }
+                        }
 
 					} else {
 						perf_count(_nonfinite_input_perf);
