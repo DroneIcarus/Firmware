@@ -1190,7 +1190,46 @@ FixedwingPositionControl::control_position(const Vector2f &curr_pos, const Vecto
 		}
 	}
 
-	/* Copy thrust output for publication */
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////===========>
+
+    /* As per Gabriel Guilmain's work from summer 2017, à compléter!!!! */
+    // Etienne et Étienne
+    if(!_control_mode.flag_control_auto_enabled)
+    {
+        // param pour take off
+//        time_begin_take_off = hrt_absolute_time();
+
+        _att_sp.decollage_custom = false;
+
+//        flag_message_takeoff_normal = false;
+//        flag_message_takeoff_custom = false;
+
+        // param pour landing
+//        time_begin_landing = hrt_absolute_time();
+//        mode_landing_01 = true;
+//        mode_landing_03 = false;
+    }
+
+    if(pos_sp_curr.type != position_setpoint_s::SETPOINT_TYPE_LAND)
+    {
+        // param pour landing
+//        time_begin_landing = hrt_absolute_time();
+//        mode_landing_01 = true;
+//        mode_landing_03 = false;
+//        flag_landing = true;
+    }
+
+    // takeoff custom: reset flag if takeoff dected before end of custom takeoff...
+    if(pos_sp_curr.type != position_setpoint_s::SETPOINT_TYPE_TAKEOFF)
+    {
+        _att_sp.decollage_custom = false;
+    }
+    ///<===========================////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////
+
+    /* Copy thrust output for publication */
 	if (_control_mode_current == FW_POSCTRL_MODE_AUTO && // launchdetector only available in auto
 	    pos_sp_curr.type == position_setpoint_s::SETPOINT_TYPE_TAKEOFF &&
 	    _launch_detection_state != LAUNCHDETECTION_RES_DETECTED_ENABLEMOTORS &&
