@@ -367,6 +367,8 @@ FixedwingAttitudeControl::vehicle_manual_poll()
 							_parameters.trim_pitch;
 					_actuators.control[actuator_controls_s::INDEX_YAW] = _manual.r * _parameters.man_yaw_scale + _parameters.trim_yaw;
 					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
+                    _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+                    _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
 				}
 			}
 		}
@@ -815,10 +817,12 @@ void FixedwingAttitudeControl::run()
 
                         /* Loops to set or reset the custom takeoff sequences of the controller*/
 
-                        if(!_att_sp.decollage_custom && !mode_take_off_custom)
+                        if(!_att_sp.decollage_custom && !mode_take_off_custom) // le _att_sp.decollage_custom provient du PosController
                         {
                             _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
                             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+                            warnx("VTOL stanby");
+
 
                             present_time = hrt_absolute_time();
 
@@ -832,6 +836,7 @@ void FixedwingAttitudeControl::run()
                         {
                             mode_take_off_custom = true;
                             mode_seq1 = true;
+                            warnx("VTOL go!");
                         }
 
                         /* Sequences of the controller for the custom takeoff */
@@ -1016,7 +1021,9 @@ void FixedwingAttitudeControl::run()
 					_actuators.control[actuator_controls_s::INDEX_YAW] = (PX4_ISFINITE(yaw_u)) ? yaw_u + trim_yaw : trim_yaw;
 
 					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = PX4_ISFINITE(_rates_sp.thrust) ? _rates_sp.thrust : 0.0f;
-				}
+                    _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+                    _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+                }
 
 				rate_ctrl_status_s rate_ctrl_status;
 				rate_ctrl_status.timestamp = hrt_absolute_time();
@@ -1031,6 +1038,19 @@ void FixedwingAttitudeControl::run()
 				int instance;
 				orb_publish_auto(ORB_ID(rate_ctrl_status), &_rate_ctrl_status_pub, &rate_ctrl_status, &instance, ORB_PRIO_DEFAULT);
 			}
+
+            if(!_vcontrol_mode.flag_control_attitude_enabled || !_vcontrol_mode.flag_control_rates_enabled || (!_vcontrol_mode.flag_control_climb_rate_enabled && !_vcontrol_mode.flag_control_offboard_enabled))
+            {
+                _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+
+                present_time = hrt_absolute_time();
+                mode_seq1 = false;
+                mode_seq2 = false;
+                mode_seq3 = false;
+                mode_seq4 = false;
+                mode_take_off_custom = false;
+            }
 
 			// Add feed-forward from roll control output to yaw control output
 			// This can be used to counteract the adverse yaw effect when rolling the plane
