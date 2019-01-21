@@ -821,7 +821,7 @@ void FixedwingAttitudeControl::run()
                         {
                             _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
                             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
-                            warnx("VTOL stanby");
+                            // warnx("VTOL stanby");
 
 
                             present_time = hrt_absolute_time();
