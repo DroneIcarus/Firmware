@@ -430,6 +430,132 @@ FixedwingAttitudeControl::vehicle_status_poll()
 }
 
 void
+FixedwingAttitudeControl::vertical_takeoff_controller() {
+    /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
+    // Etienne et Étienne
+
+    matrix::Eulerf _eulDes;
+    matrix::Quatf _qDes;
+    matrix::Quatf _qAtt2Des;
+    matrix::Quatf _qAtt = _att.q;
+    matrix::Eulerf _eulAtt2Des;
+    float R2D = 57.29578;
+    float D2R = 1/R2D;
+
+    /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
+    // Etienne et Étienne
+
+
+    /* Sequences of the controller for the custom takeoff */
+    float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
+
+    switch (mode_seq) {
+        // 1 - WAIT AVANT LA SEQUENCE (FALCULTATIF)
+        case WAIT :
+            _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
+            _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal; //0.28f;
+            _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+            _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
+            _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+
+            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_01) //
+            {
+                warnx("Etienne Start");
+                present_time = hrt_absolute_time();
+                mode_seq = FLIP;
+            }
+            break;
+
+        // 2 - ACTIVE LE SERVO POUR REMONTER LE PIVOT
+        case FLIP :
+            _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
+            _actuators_airframe.control[1] = _parameters.take_off_prop_vertical;
+            _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+            _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
+            _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+
+            if (hrt_absolute_time() - present_time >= 1000000) //(int)_parameters.take_off_custom_time_03) // 1 sec
+            {
+                warnx("Transit to TakeOff Control");
+                present_time = hrt_absolute_time();
+                mode_seq = RISING;
+            }
+            break;
+
+
+        // 3 - Vertical takeoff cControl
+        case RISING :
+            _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+            _eulDes = matrix::Eulerf(0.0f, 0.0f, 0.0f);
+            _qDes = matrix::Quatf(_eulDes);
+            _qAtt2Des = _qAtt.inversed() * _qDes;
+            _eulAtt2Des = _qAtt2Des;
+
+            _actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp * _eulAtt2Des(1) -
+                                              _parameters.take_off_rising_pitch_kd * _att.pitchspeed) * r2servo +
+                                             _parameters.take_off_prop_horizontal;
+            _actuators_airframe.control[2] = (_parameters.take_off_rising_yaw_kp * _eulAtt2Des(2) -
+                                              _parameters.take_off_rising_yaw_kd * _att.yawspeed) +
+                                             _parameters.take_off_rudder_offset;
+            _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
+            _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+
+            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03) // 2 sec
+            {
+                warnx("Transit to NoseDown Control");
+                present_time = hrt_absolute_time();
+                mode_seq = CLIMBING;
+            }
+            break;
+
+        // 4 - NoseDown Control
+        case CLIMBING :
+            float _elevDes = 20.0f * D2R;
+            // Present attitude from Quaternion to Euler ZXY
+            float _headingNow = atan2f(-2.0f * (_qAtt(1) * _qAtt(2) - _qAtt(0) * _qAtt(3)),
+                                       1.0f - 2.0f * (_qAtt(1) * _qAtt(1) + _qAtt(3) * _qAtt(3)));
+            float _bankNow = asinf(2.0f * (_qAtt(2) * _qAtt(3) + _qAtt(0) * _qAtt(1)));
+            // Quaternion with the right heading and elevation from nose down movement of present attitude - From Euler Rotation ZXY to Quaternion
+            float cang[3] = {cosf(_headingNow / 2.0f), cosf(_bankNow / 2.0f), cosf(_elevDes / cosf(_bankNow) / 2.0f)};
+            float sang[3] = {sinf(_headingNow / 2.0f), sinf(_bankNow / 2.0f), sinf(_elevDes / cosf(_bankNow) / 2.0f)};
+            matrix::Quatf _qElev;
+            _qElev(0) = cang[0] * cang[1] * cang[2] - sang[0] * sang[1] * sang[2];
+            _qElev(1) = cang[0] * sang[1] * cang[2] - sang[0] * cang[1] * sang[2];
+            _qElev(2) = cang[0] * cang[1] * sang[2] + sang[0] * sang[1] * cang[2];
+            _qElev(3) = cang[0] * sang[1] * sang[2] + sang[0] * cang[1] * cang[2];
+            matrix::Eulerf _eulElev = _qElev;
+            // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
+            _eulDes = matrix::Eulerf(0.0f, _eulElev(1), _eulElev(2));
+            _qDes = matrix::Quatf(_eulDes);
+            // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
+            float _pitchErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(3) + _qAtt2Des(0) * _qAtt2Des(2)),
+                                     1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(2) * _qAtt2Des(2)));
+            float _rollErr = asinf(-2.0f * (_qAtt2Des(2) * _qAtt2Des(3) - _qAtt2Des(0) * _qAtt2Des(1)));
+//								float   _yawErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(2) + _qAtt2Des(0) * _qAtt2Des(3)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(3) * _qAtt2Des(3)));
+
+            _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+            _actuators_airframe.control[1] = (_pitchErr * _parameters.take_off_climbing_pitch_kp -
+                                              _att.pitchspeed * _parameters.take_off_climbing_pitch_kd) * r2servo +
+                                             _parameters.take_off_prop_horizontal;
+            _actuators_airframe.control[2] =
+                    (-_att.yawspeed * _parameters.take_off_climbing_yawrate_kp) + _parameters.take_off_rudder_offset;
+            _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr * _parameters.take_off_climbing_roll_kp -
+                                                                   _att.rollspeed *
+                                                                   _parameters.take_off_climbing_roll_kd) +
+                                                                  _parameters.trim_roll;
+            _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
+            {
+                warnx("Transit to Px4 Control");
+                present_time = hrt_absolute_time();
+                mode_seq = WAIT;
+                mode_take_off_custom = false;
+            }
+            break;
+    }
+}
+
+void
 FixedwingAttitudeControl::vehicle_land_detected_poll()
 {
 	/* check if there is new status information */
@@ -482,21 +608,10 @@ void FixedwingAttitudeControl::run()
     /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
     // Etienne et Étienne
 
-    static bool mode_seq1 = false;
-    static bool mode_seq2 = false;
-    static bool mode_seq3 = false;
-    static bool mode_seq4 = false;
-    static bool mode_take_off_custom = false;
+    mode_take_off_custom = false;
+    present_time = hrt_absolute_time(); // timer pour les etapes du decollage
+    mode_seq = WAIT;
 
-    static int present_time = hrt_absolute_time(); // timer pour les etapes du decollage
-
-    matrix::Eulerf _eulDes;
-    matrix::Quatf _qDes;
-    matrix::Quatf _qAtt2Des;
-    matrix::Quatf _qAtt = _att.q;
-    matrix::Eulerf _eulAtt2Des;
-    float R2D = 57.29578;
-    float D2R = 1/R2D;
 
     ////<======================///////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////
@@ -812,8 +927,6 @@ void FixedwingAttitudeControl::run()
                         /////////////////////////////////////////////////////////////////////////////////////////////
                         ////////////////////===========>
 
-                        /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
-                        // Etienne et Étienne
 
                         /* Loops to set or reset the custom takeoff sequences of the controller*/
 
@@ -821,132 +934,22 @@ void FixedwingAttitudeControl::run()
                         {
                             _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
                             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
-                            // warnx("VTOL stanby");
 
-
-                            present_time = hrt_absolute_time();
-
-                            mode_seq1 = false;
-                            mode_seq2 = false;
-                            mode_seq3 = false;
-                            mode_seq4 = false;
-
+                            present_time = hrt_absolute_time(); // timer pour les etapes du decollage
+                            mode_seq = WAIT;
                         }
                         else if(_att_sp.decollage_custom && !mode_take_off_custom) // il y a un decolage custom -> on active le flag qui permet d'effectuer la séquence
                         {
                             mode_take_off_custom = true;
-                            mode_seq1 = true;
+                            mode_seq = WAIT;
                             warnx("VTOL go!");
                         }
 
-                        /* Sequences of the controller for the custom takeoff */
                         if(mode_take_off_custom)   {
-                            float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
-
-                            // 1 - WAIT AVANT LA SEQUENCE (FALCULTATIF)
-                            if(mode_seq1)
-                            {
-                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
-                                _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal; //0.28f;
-                                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
-                                _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
-                                _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
-
-                                if(hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_01) //
-                                {
-                                    warnx("Etienne Start");
-                                    present_time = hrt_absolute_time();
-                                    mode_seq1 = false;
-                                    mode_seq2 = true;
-                                }
-                            }
-
-                            // 2 - ACTIVE LE SERVO POUR REMONTER LE PIVOT
-                            if(mode_seq2)
-                            {
-                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
-                                _actuators_airframe.control[1] = _parameters.take_off_prop_vertical;
-                                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
-                                _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
-                                _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
-
-                                if(hrt_absolute_time() - present_time >= 1000000) //(int)_parameters.take_off_custom_time_03) // 1 sec
-                                {
-                                    warnx("Transit to TakeOff Control");
-                                    present_time = hrt_absolute_time();
-                                    mode_seq2 = false;
-                                    mode_seq3 = true;
-                                }
-                            }
-
-                            // 3 - Vertical takeoff cControl
-
-                            if (mode_seq3) {
-                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-
-                                _eulDes = matrix::Eulerf(0.0f, 0.0f, 0.0f);
-                                _qDes = matrix::Quatf(_eulDes);
-                                _qAtt2Des = _qAtt.inversed() * _qDes;
-                                _eulAtt2Des = _qAtt2Des;
-
-                                //Boucle pour le print et l'incrementation de l'indice compteur
-//                                if (++_countPrint >= 200)
-//                                {
-//                                    warn("Error real : %0.3f , %0.3f , %0.3f", (double)(_EulAtt2Des(0)*R2D), (double)(_EulAtt2Des(1)*R2D), (double)(_EulAtt2Des(2)*R2D));
-//                                    _countPrint = 0;
-//                                }
-
-                                _actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp*_eulAtt2Des(1) - _parameters.take_off_rising_pitch_kd*_att.pitchspeed) * r2servo + _parameters.take_off_prop_horizontal;
-                                _actuators_airframe.control[2] = (_parameters.take_off_rising_yaw_kp*_eulAtt2Des(2) - _parameters.take_off_rising_yaw_kd*_att.yawspeed)+_parameters.take_off_rudder_offset;
-                                _actuators.control[actuator_controls_s::INDEX_ROLL]  = _parameters.trim_roll;
-                                _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
-
-                                if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03) // 2 sec
-                                {
-                                    warnx("Transit to NoseDown Control");
-                                    present_time = hrt_absolute_time();
-                                    mode_seq3 = false;
-                                    mode_seq4 = true;
-                                }
-                            }
-                            // 4 - NoseDown Control
-                            if (mode_seq4) {
-
-                                float _elevDes = 20.0f*D2R;
-                                // Present attitude from Quaternion to Euler ZXY
-                                float _headingNow = atan2f(-2.0f * (_qAtt(1) * _qAtt(2) - _qAtt(0) * _qAtt(3)), 1.0f - 2.0f * (_qAtt(1) * _qAtt(1) + _qAtt(3) * _qAtt(3)));
-                                float _bankNow = asinf(2.0f * (_qAtt(2) * _qAtt(3) + _qAtt(0) * _qAtt(1)));
-                                // Quaternion with the right heading and elevation from nose down movement of present attitude - From Euler Rotation ZXY to Quaternion
-                                float cang[3] = {cosf(_headingNow/2.0f) , cosf(_bankNow/2.0f) , cosf(_elevDes/cosf(_bankNow)/2.0f)};
-                                float sang[3] = {sinf(_headingNow/2.0f) , sinf(_bankNow/2.0f) , sinf(_elevDes/cosf(_bankNow)/2.0f)};
-                                matrix::Quatf _qElev;
-                                _qElev(0) = cang[0]*cang[1]*cang[2]-sang[0]*sang[1]*sang[2];
-                                _qElev(1) = cang[0]*sang[1]*cang[2]-sang[0]*cang[1]*sang[2];
-                                _qElev(2) = cang[0]*cang[1]*sang[2]+sang[0]*sang[1]*cang[2];
-                                _qElev(3) = cang[0]*sang[1]*sang[2]+sang[0]*cang[1]*cang[2];
-                                matrix::Eulerf _eulElev = _qElev;
-                                // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
-                                _eulDes = matrix::Eulerf(0.0f, _eulElev(1), _eulElev(2));
-                                _qDes = matrix::Quatf(_eulDes);
-                                // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
-                                float _pitchErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(3) + _qAtt2Des(0) * _qAtt2Des(2)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(2) * _qAtt2Des(2)));
-                                float  _rollErr = asinf(-2.0f * (_qAtt2Des(2) * _qAtt2Des(3) - _qAtt2Des(0) * _qAtt2Des(1)));
-//								float   _yawErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(2) + _qAtt2Des(0) * _qAtt2Des(3)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(3) * _qAtt2Des(3)));
-
-                                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-                                _actuators_airframe.control[1] = (_pitchErr*_parameters.take_off_climbing_pitch_kp -_att.pitchspeed*_parameters.take_off_climbing_pitch_kd) * r2servo + _parameters.take_off_prop_horizontal;
-                                _actuators_airframe.control[2] = ( - _att.yawspeed*_parameters.take_off_climbing_yawrate_kp) + _parameters.take_off_rudder_offset;
-                                _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr*_parameters.take_off_climbing_roll_kp - _att.rollspeed*_parameters.take_off_climbing_roll_kd) + _parameters.trim_roll;
-                                _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
-                                if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
-                                {
-                                    warnx("Transit to Px4 Control");
-                                    present_time = hrt_absolute_time();
-                                    mode_seq4 = false;
-                                    mode_take_off_custom = false;
-                                }
-                            }
+                            vertical_takeoff_controller();
                         }
+
+
 
                         ///<===========================////////////////////////////////////////////////////////////////
                         /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1045,10 +1048,7 @@ void FixedwingAttitudeControl::run()
                 _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
 
                 present_time = hrt_absolute_time();
-                mode_seq1 = false;
-                mode_seq2 = false;
-                mode_seq3 = false;
-                mode_seq4 = false;
+                mode_seq = WAIT;
                 mode_take_off_custom = false;
             }
 

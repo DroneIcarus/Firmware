@@ -313,9 +313,20 @@ private:
         param_t take_off_climbing_roll_kd;
         param_t take_off_climbing_yawrate_kp;
 
-        /// <======= ////////////////////////////////////////////////////////////////////
 
 	} _parameter_handles{};		/**< handles for interesting parameters */
+
+	int present_time;
+	bool mode_take_off_custom;
+	enum VerticalTakeoffSequence {
+		WAIT = 0, /**<  */
+		FLIP = 1, /**<  */
+		RISING = 2, /**<  */
+		CLIMBING = 3, /**<  */
+	} ;
+	VerticalTakeoffSequence mode_seq;
+
+	/// <======= ////////////////////////////////////////////////////////////////////
 
 	ECL_RollController				_roll_ctrl;
 	ECL_PitchController				_pitch_ctrl;
@@ -335,5 +346,6 @@ private:
 	void		global_pos_poll();
 	void		vehicle_status_poll();
 	void		vehicle_land_detected_poll();
+	void		vertical_takeoff_controller();
 
 };
