@@ -223,6 +223,7 @@ private:
         float take_off_climbing_roll_kp;
         float take_off_climbing_roll_kd;
         float take_off_climbing_yawrate_kp;
+		bool take_off_indoor;
 
         /// <======= ///////////////////////////////////////////////////////////////////////
 
@@ -312,6 +313,7 @@ private:
         param_t take_off_climbing_roll_kp;
         param_t take_off_climbing_roll_kd;
         param_t take_off_climbing_yawrate_kp;
+        param_t take_off_indoor;
 
 
 	} _parameter_handles{};		/**< handles for interesting parameters */

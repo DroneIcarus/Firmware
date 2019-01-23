@@ -131,6 +131,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
     _parameter_handles.take_off_climbing_roll_kp= param_find("TK_CLB_ROLL_KP");
     _parameter_handles.take_off_climbing_roll_kd= param_find("TK_CLB_ROLL_KD");
     _parameter_handles.take_off_climbing_yawrate_kp= param_find("TK_CLB_YAWRAT_KP");
+    _parameter_handles.take_off_indoor= param_find("TK_INDOOR");
 
     /// <======= ////////////////////////////////////////////////////////////////////
 
@@ -244,6 +245,8 @@ FixedwingAttitudeControl::parameters_update()
     param_get(_parameter_handles.take_off_climbing_roll_kp, &_parameters.take_off_climbing_roll_kp);
     param_get(_parameter_handles.take_off_climbing_roll_kd, &_parameters.take_off_climbing_roll_kd);
     param_get(_parameter_handles.take_off_climbing_yawrate_kp, &_parameters.take_off_climbing_yawrate_kp);
+    param_get(_parameter_handles.take_off_indoor, &_parameters.take_off_indoor);
+
     /// <======= ////////////////////////////////////////////////////////////////////
 
 	if (_vehicle_status.is_vtol) {
@@ -717,6 +720,16 @@ void FixedwingAttitudeControl::run()
 			vehicle_status_poll();
 			vehicle_land_detected_poll();
 
+            if(_parameters.take_off_indoor && _vcontrol_mode.flag_armed){
+                warnx("Indoor And Armed!");
+            }
+            if(_parameters.take_off_indoor && !_vcontrol_mode.flag_armed){
+                warnx("Indoor An Not Armed!");
+            }
+            if(!_parameters.take_off_indoor){
+                warnx("No Indoor!");
+            }
+
 			// the position controller will not emit attitude setpoints in some modes
 			// we need to make sure that this flag is reset
 			_att_sp.fw_control_yaw = _att_sp.fw_control_yaw && _vcontrol_mode.flag_control_auto_enabled;
@@ -954,7 +967,7 @@ void FixedwingAttitudeControl::run()
                         ///<===========================////////////////////////////////////////////////////////////////
                         /////////////////////////////////////////////////////////////////////////////////////////////
 
-                        /* If no custom takeoof, throttle comes from PositionController through _att_sp.thrust*/
+                        /* If no custom takeoff, throttle comes from PositionController through _att_sp.thrust*/
                         else {
 
                             /* throttle passed through if it is finite and if no engine failure was detected */
