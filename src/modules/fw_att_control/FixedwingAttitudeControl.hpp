@@ -320,6 +320,8 @@ private:
 
     uint64_t present_time;
 	bool mode_take_off_custom;
+	bool take_off_trigger;
+
 	enum VerticalTakeoffSequence {
 		WAIT = 0, /**<  */
 		FLIP = 1, /**<  */

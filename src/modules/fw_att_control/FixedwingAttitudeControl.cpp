@@ -612,6 +612,7 @@ void FixedwingAttitudeControl::run()
     // Etienne et Étienne
 
     mode_take_off_custom = false;
+    take_off_trigger = false;
     present_time = hrt_absolute_time(); // timer pour les etapes du decollage
     mode_seq = WAIT;
 
@@ -719,16 +720,6 @@ void FixedwingAttitudeControl::run()
 			global_pos_poll();
 			vehicle_status_poll();
 			vehicle_land_detected_poll();
-
-            if(_parameters.take_off_indoor && _vcontrol_mode.flag_armed){
-                warnx("Indoor And Armed!");
-            }
-            if(_parameters.take_off_indoor && !_vcontrol_mode.flag_armed){
-                warnx("Indoor An Not Armed!");
-            }
-            if(!_parameters.take_off_indoor){
-                warnx("No Indoor!");
-            }
 
 			// the position controller will not emit attitude setpoints in some modes
 			// we need to make sure that this flag is reset
@@ -1055,15 +1046,46 @@ void FixedwingAttitudeControl::run()
 				orb_publish_auto(ORB_ID(rate_ctrl_status), &_rate_ctrl_status_pub, &rate_ctrl_status, &instance, ORB_PRIO_DEFAULT);
 			}
 
-            if(!_vcontrol_mode.flag_control_attitude_enabled || !_vcontrol_mode.flag_control_rates_enabled || (!_vcontrol_mode.flag_control_climb_rate_enabled && !_vcontrol_mode.flag_control_offboard_enabled))
-            {
-                _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
-                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+//            if(!_vcontrol_mode.flag_control_attitude_enabled || !_vcontrol_mode.flag_control_rates_enabled || (!_vcontrol_mode.flag_control_climb_rate_enabled && !_vcontrol_mode.flag_control_offboard_enabled))
+//            {
+//                _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+//                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+//
+//                present_time = hrt_absolute_time();
+//                mode_seq = WAIT;
+//                mode_take_off_custom = false;
+//            }
 
-                present_time = hrt_absolute_time();
-                mode_seq = WAIT;
-                mode_take_off_custom = false;
+            /////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////===========> Etienne - Takeoff trigger when Indoor flight, No GPS
+
+            /* Allow auto takeoff indoor or without GPS from _parameters.take_off_indoor*/
+            if (_parameters.take_off_indoor) {
+                /* Trigger auto vertical takeoff when in no GPS, manual/stab mode*/
+                if (_vcontrol_mode.flag_armed && !take_off_trigger) {
+                    mode_take_off_custom = true; // Start auto takeoff
+                    present_time = hrt_absolute_time(); // timer pour les etapes du decollage
+                    mode_seq = WAIT;
+                    warnx("Trigger mode_take_off_custom from _parameters.take_off_indoor - Armed");
+
+                    take_off_trigger = true;
+                }
+
+                    /* Untrigger auto vertical takeoff when in no GPS, manual/stab mode */
+                else if (!_vcontrol_mode.flag_armed && take_off_trigger) {
+                    mode_take_off_custom = false; // Kill auto takeoff
+                    warnx("Untrigger mode_take_off_custom from _parameters.take_off_indoor - Unarmed");
+
+                    take_off_trigger = false;
+                }
+
+                if (mode_take_off_custom) {
+                    vertical_takeoff_controller();
+                }
             }
+
+            ///<===========================////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////////////
 
 			// Add feed-forward from roll control output to yaw control output
 			// This can be used to counteract the adverse yaw effect when rolling the plane
