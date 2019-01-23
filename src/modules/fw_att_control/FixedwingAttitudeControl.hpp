@@ -318,7 +318,7 @@ private:
 
 	} _parameter_handles{};		/**< handles for interesting parameters */
 
-	int present_time;
+    uint64_t present_time;
 	bool mode_take_off_custom;
 	enum VerticalTakeoffSequence {
 		WAIT = 0, /**<  */
