@@ -931,35 +931,38 @@ void FixedwingAttitudeControl::run()
                         /////////////////////////////////////////////////////////////////////////////////////////////
                         ////////////////////===========>
 
+                        /* Auto takeoff loop with GPS, in Mission Mode with Takeoff Waypoint*/
+                        if (!_parameters.take_off_indoor) {
+                            /* Trigger auto vertical takeoff when receive message _att_sp.decollage_custom from Pos Controller*/
+                            if (_att_sp.decollage_custom && !take_off_trigger) {
+                                mode_take_off_custom = true; // Start auto takeoff
+                                present_time = hrt_absolute_time(); // timer pour les etapes du decollage
+                                mode_seq = WAIT;
+                                warnx("Trigger mode_take_off_custom from _att_sp.decollage_custom - Mission and Takeoff");
 
-                        /* Loops to set or reset the custom takeoff sequences of the controller*/
+                                take_off_trigger = true;
+                            }
 
-                        if(!_att_sp.decollage_custom && !mode_take_off_custom) // le _att_sp.decollage_custom provient du PosController
-                        {
-                            _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
-                            _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
+                                /* Untrigger auto vertical takeoff when Pos Controller is done */
+                            else if (!_att_sp.decollage_custom && take_off_trigger) {
+                                // mode_take_off_custom = false; // Kill auto takeoff??
+                                warnx("Untrigger mode_take_off_custom from _att_sp.decollage_custom - Mission and Takeoff");
 
-                            present_time = hrt_absolute_time(); // timer pour les etapes du decollage
-                            mode_seq = WAIT;
+                                take_off_trigger = false;
+                            }
+
+                            if (mode_take_off_custom) {
+                                vertical_takeoff_controller();
+                            }
                         }
-                        else if(_att_sp.decollage_custom && !mode_take_off_custom) // il y a un decolage custom -> on active le flag qui permet d'effectuer la séquence
-                        {
-                            mode_take_off_custom = true;
-                            mode_seq = WAIT;
-                            warnx("VTOL go!");
-                        }
 
-                        if(mode_take_off_custom)   {
-                            vertical_takeoff_controller();
-                        }
-
-
-
-                        ///<===========================////////////////////////////////////////////////////////////////
+                        ////<===========================////////////////////////////////////////////////////////////////
                         /////////////////////////////////////////////////////////////////////////////////////////////
 
                         /* If no custom takeoff, throttle comes from PositionController through _att_sp.thrust*/
                         else {
+                            _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+                            _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
 
                             /* throttle passed through if it is finite and if no engine failure was detected */
                             _actuators.control[actuator_controls_s::INDEX_THROTTLE] = (PX4_ISFINITE(_att_sp.thrust)
