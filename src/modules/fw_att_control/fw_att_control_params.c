@@ -118,6 +118,17 @@ PARAM_DEFINE_FLOAT(TK_PROP_VERT, 1.0f);
 PARAM_DEFINE_FLOAT(TK_RUDDER_OFF, 0.0f);
 
 /**
+ * Custom takeoff controller : Rise sequence, pitch desired
+ *
+ * @min 0.0
+ * @max 92
+ * @decimal 1
+ * @increment 0.1
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_RISE_PITCH_DE, 90.0f);
+
+/**
  * Custom takeoff controller : Rise sequence, Kp on pitch error
  *
  * @min 0.0
@@ -160,6 +171,17 @@ PARAM_DEFINE_FLOAT(TK_RISE_YAW_KP, 2.00f);
  * @group FW Attitude Control
 */
 PARAM_DEFINE_FLOAT(TK_RISE_YAW_KD, 0.00f);
+
+/**
+ * Custom takeoff controller : Climb sequence, pitch desired
+ *
+ * @min 0.0
+ * @max 92
+ * @decimal 1
+ * @increment 0.1
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_CLB_PITCH_DES, 20.0f);
 
 /**
  * Custom takeoff controller : Climb sequence, Kd on pitch error

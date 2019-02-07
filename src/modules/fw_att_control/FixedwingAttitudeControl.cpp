@@ -122,10 +122,12 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
     _parameter_handles.take_off_prop_horizontal= param_find("TK_PROP_HORI");
     _parameter_handles.take_off_prop_vertical= param_find("TK_PROP_VERT");
     _parameter_handles.take_off_rudder_offset= param_find("TK_RUDDER_OFF");
+    _parameter_handles.take_off_rising_pitch_des= param_find("TK_RISE_PITCH_DE");
     _parameter_handles.take_off_rising_pitch_kp= param_find("TK_RISE_PITCH_KP");
     _parameter_handles.take_off_rising_pitch_kd= param_find("TK_RISE_PITCH_KD");
     _parameter_handles.take_off_rising_yaw_kp= param_find("TK_RISE_YAW_KP");
     _parameter_handles.take_off_rising_yaw_kd= param_find("TK_RISE_YAW_KD");
+    _parameter_handles.take_off_climbing_pitch_des= param_find("TK_CLB_PITCH_DES");
     _parameter_handles.take_off_climbing_pitch_kp= param_find("TK_CLB_PITCH_KP");
     _parameter_handles.take_off_climbing_pitch_kd= param_find("TK_CLB_PITCH_KD");
     _parameter_handles.take_off_climbing_roll_kp= param_find("TK_CLB_ROLL_KP");

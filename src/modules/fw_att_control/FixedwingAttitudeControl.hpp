@@ -214,10 +214,12 @@ private:
         float take_off_prop_horizontal;
         float take_off_prop_vertical;
         float take_off_rudder_offset;
+        float take_off_rising_pitch_des;
         float take_off_rising_pitch_kp;
         float take_off_rising_pitch_kd;
         float take_off_rising_yaw_kp;
         float take_off_rising_yaw_kd;
+        float take_off_climbing_pitch_des;
         float take_off_climbing_pitch_kp;
         float take_off_climbing_pitch_kd;
         float take_off_climbing_roll_kp;
@@ -304,10 +306,12 @@ private:
         param_t take_off_prop_horizontal;
         param_t take_off_prop_vertical;
         param_t take_off_rudder_offset;
+        param_t take_off_rising_pitch_des;
         param_t take_off_rising_pitch_kp;
         param_t take_off_rising_pitch_kd;
         param_t take_off_rising_yaw_kp;
         param_t take_off_rising_yaw_kd;
+        param_t take_off_climbing_pitch_des;
         param_t take_off_climbing_pitch_kp;
         param_t take_off_climbing_pitch_kd;
         param_t take_off_climbing_roll_kp;
