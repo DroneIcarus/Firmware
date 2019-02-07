@@ -118,7 +118,7 @@ PARAM_DEFINE_FLOAT(TK_PROP_VERT, 1.0f);
 PARAM_DEFINE_FLOAT(TK_RUDDER_OFF, 0.0f);
 
 /**
- * Custom takeoff controller : Rise sequence, pitch desired
+ * Custom takeoff controller : Rise sequence, pitch desired in degree
  *
  * @min 0.0
  * @max 92
@@ -173,7 +173,7 @@ PARAM_DEFINE_FLOAT(TK_RISE_YAW_KP, 2.00f);
 PARAM_DEFINE_FLOAT(TK_RISE_YAW_KD, 0.00f);
 
 /**
- * Custom takeoff controller : Climb sequence, pitch desired
+ * Custom takeoff controller : Climb sequence, pitch desired in degree
  *
  * @min 0.0
  * @max 92

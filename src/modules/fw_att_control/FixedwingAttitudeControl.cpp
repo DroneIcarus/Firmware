@@ -488,10 +488,10 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             break;
 
 
-        // 3 - Vertical takeoff cControl
+        // 3 - Vertical takeoff Control, Rising sequence
         case RISING :
             _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-            _eulDes = matrix::Eulerf(0.0f, 0.0f, 0.0f);
+            _eulDes = matrix::Eulerf(0.0f, _parameters.take_off_rising_pitch_des*D2R, 0.0f);
             _qDes = matrix::Quatf(_eulDes);
             _qAtt2Des = _qAtt.inversed() * _qDes;
             _eulAtt2Des = _qAtt2Des;
@@ -513,9 +513,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             }
             break;
 
-        // 4 - NoseDown Control
+        // 4 - NoseDown Control, Climbing sequence
         case CLIMBING :
-            float _elevDes = 20.0f * D2R;
+            float _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
             // Present attitude from Quaternion to Euler ZXY
             float _headingNow = atan2f(-2.0f * (_qAtt(1) * _qAtt(2) - _qAtt(0) * _qAtt(3)),
                                        1.0f - 2.0f * (_qAtt(1) * _qAtt(1) + _qAtt(3) * _qAtt(3)));
