@@ -238,10 +238,12 @@ FixedwingAttitudeControl::parameters_update()
     param_get(_parameter_handles.take_off_prop_horizontal, &_parameters.take_off_prop_horizontal);
     param_get(_parameter_handles.take_off_prop_vertical, &_parameters.take_off_prop_vertical);
     param_get(_parameter_handles.take_off_rudder_offset, &_parameters.take_off_rudder_offset);
+    param_get(_parameter_handles.take_off_rising_pitch_des, &_parameters.take_off_rising_pitch_des);
     param_get(_parameter_handles.take_off_rising_pitch_kp, &_parameters.take_off_rising_pitch_kp);
     param_get(_parameter_handles.take_off_rising_pitch_kd, &_parameters.take_off_rising_pitch_kd);
     param_get(_parameter_handles.take_off_rising_yaw_kp, &_parameters.take_off_rising_yaw_kp);
     param_get(_parameter_handles.take_off_rising_yaw_kd, &_parameters.take_off_rising_yaw_kd);
+    param_get(_parameter_handles.take_off_climbing_pitch_des, &_parameters.take_off_climbing_pitch_des);
     param_get(_parameter_handles.take_off_climbing_pitch_kp, &_parameters.take_off_climbing_pitch_kp);
     param_get(_parameter_handles.take_off_climbing_pitch_kd, &_parameters.take_off_climbing_pitch_kd);
     param_get(_parameter_handles.take_off_climbing_roll_kp, &_parameters.take_off_climbing_roll_kp);
@@ -447,6 +449,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
     float R2D = 57.29578;
     float D2R = 1/R2D;
 
+    /* only for debug */
+    static int _countPrint =0;
+
     /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
     // Etienne et Étienne
 
@@ -532,6 +537,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
             _eulDes = matrix::Eulerf(0.0f, _eulElev(1), _eulElev(2));
             _qDes = matrix::Quatf(_eulDes);
+            _qAtt2Des = _qAtt.inversed() * _qDes;
             // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
             float _pitchErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(3) + _qAtt2Des(0) * _qAtt2Des(2)),
                                      1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(2) * _qAtt2Des(2)));
@@ -549,6 +555,15 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                                                                    _parameters.take_off_climbing_roll_kd) +
                                                                   _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+
+            if (++_countPrint >= 100)
+            {
+                warn("Nose and Rud : %0.3f , %0.3f", (double)(_actuators_airframe.control[1]), (double)(_actuators_airframe.control[2]));
+                warn("_eulDes : %0.3f , %0.3f , %0.3f", (double)(_eulDes(0)*R2D), (double)(_eulDes(1)*R2D), (double)(_eulDes(2)*R2D));
+                warn("pitch_roll_Err : %0.3f , %0.3f", (double)(_pitchErr)*R2D, (double)(_rollErr)*R2D);
+                _countPrint = 0;
+            }
+
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
             {
                 warnx("Transit to Px4 Control");
