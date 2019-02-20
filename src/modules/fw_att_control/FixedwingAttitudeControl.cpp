@@ -450,7 +450,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
     float D2R = 1/R2D;
 
     /* only for debug */
-    static int _countPrint =0;
+    //static int _countPrint =0;
 
     /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
     // Etienne et Étienne
@@ -556,6 +556,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                                                                   _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
+            /*
             if (++_countPrint >= 100)
             {
                 warn("Nose and Rud : %0.3f , %0.3f", (double)(_actuators_airframe.control[1]), (double)(_actuators_airframe.control[2]));
@@ -563,6 +564,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 warn("pitch_roll_Err : %0.3f , %0.3f", (double)(_pitchErr)*R2D, (double)(_rollErr)*R2D);
                 _countPrint = 0;
             }
+             */
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
             {
