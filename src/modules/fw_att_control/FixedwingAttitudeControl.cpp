@@ -436,11 +436,15 @@ FixedwingAttitudeControl::vehicle_status_poll()
 	}
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////====================================>
+/* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here.
+ * Etienne at winter 2019 reorganise the aquatic custom takeoff controller in Switch sequence in its own function*/
+
+
 void
 FixedwingAttitudeControl::vertical_takeoff_controller() {
-    /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
-    // Etienne et Étienne
-
     matrix::Eulerf _eulDes;
     matrix::Quatf _qDes;
     matrix::Quatf _qAtt2Des;
@@ -451,10 +455,6 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 
     /* only for debug */
 //    static int _countPrint =0;
-
-    /* As per Gabriel Guilmain's work from summer 2017, the aquatic custom takeoff controller is insert here */
-    // Etienne et Étienne
-
 
     /* Sequences of the controller for the custom takeoff */
     float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
@@ -574,6 +574,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             break;
     }
 }
+
+////<======================///////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 void
 FixedwingAttitudeControl::vehicle_land_detected_poll()
@@ -947,6 +950,7 @@ void FixedwingAttitudeControl::run()
 
                         /////////////////////////////////////////////////////////////////////////////////////////////
                         ////////////////////===========>
+                        /*Access to vertical_takeoff_controller() from Mission mode*/
 
                         /* Auto takeoff loop with GPS, in Mission Mode with Takeoff Waypoint*/
                         if (!_parameters.take_off_indoor) {
