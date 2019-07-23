@@ -30,6 +30,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************/
+#define R2D 57.29578f
+#define D2R 1.0f/R2D
+#define EMACOEF 0.2f
 
 #include <px4_module.h>
 #include <drivers/drv_hrt.h>
@@ -327,6 +330,14 @@ private:
     uint64_t present_time;
 	bool mode_take_off_custom;
 	bool take_off_trigger;
+    struct {
+        float alt0;
+		Eulerf eulDes;
+		Quatf qDes;
+		Quatf qAtt2Des;
+		Quatf qAtt;
+		Eulerf eulAtt2Des;
+    } _vControl;
 
 	enum VerticalTakeoffSequence {
 		WAIT, /**<  */

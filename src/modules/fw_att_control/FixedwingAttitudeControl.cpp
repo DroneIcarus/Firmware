@@ -447,15 +447,7 @@ FixedwingAttitudeControl::vehicle_status_poll()
 
 void
 FixedwingAttitudeControl::vertical_takeoff_controller() {
-    matrix::Eulerf _eulDes;
-    matrix::Quatf _qDes;
-    matrix::Quatf _qAtt2Des;
-    matrix::Quatf _qAtt = _att.q;
-    matrix::Eulerf _eulAtt2Des;
-    float R2D = 57.29578f;
-    float D2R = 1.0f/R2D;
-    float alt0;
-    float _avgCoef = 0.2f;
+	_vControl.qAtt = _att.q;
 
     /* only for debug */
 //    static int _countPrint =0;
@@ -478,7 +470,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 warnx("Etienne Start");
                 present_time = hrt_absolute_time();
                 mode_seq = FLIP;
-                alt0 = _global_pos.alt;
+                _vControl.alt0 = _global_pos.alt;
             }
             break;
 
@@ -489,7 +481,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
-            alt0 = _avgCoef*_global_pos.alt + (1-_avgCoef) * alt0;
+            _vControl.alt0 = EMACOEF*_global_pos.alt + (1-EMACOEF) * _vControl.alt0;
 
             if (hrt_absolute_time() - present_time >= 1000000) //(int)_parameters.take_off_custom_time_03) // 1 sec
             {
@@ -503,22 +495,22 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
         // 3 - Vertical takeoff Control, Rising sequence
         case RISING :
             _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-            _eulDes = matrix::Eulerf(0.0f, _parameters.take_off_rising_pitch_des*D2R, 0.0f);
-            _qDes = matrix::Quatf(_eulDes);
-            _qAtt2Des = _qAtt.inversed() * _qDes;
-            _eulAtt2Des = _qAtt2Des;
+			_vControl.eulDes = Eulerf(0.0f, _parameters.take_off_rising_pitch_des*D2R, 0.0f);
+            _vControl.qDes = Quatf(_vControl.eulDes);
+            _vControl.qDes = _vControl.qAtt.inversed() * _vControl.qDes;
+            _vControl.eulAtt2Des = _vControl.qDes;
 
-            _actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp * _eulAtt2Des(1) -
+            _actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp * _vControl.eulAtt2Des(1) -
                                               _parameters.take_off_rising_pitch_kd * _att.pitchspeed) * r2servo +
                                              _parameters.take_off_prop_horizontal;
-            _actuators_airframe.control[2] = (_parameters.take_off_rising_yaw_kp * _eulAtt2Des(2) -
+            _actuators_airframe.control[2] = (_parameters.take_off_rising_yaw_kp * _vControl.eulAtt2Des(2) -
                                               _parameters.take_off_rising_yaw_kd * _att.yawspeed) +
                                              _parameters.take_off_rudder_offset;
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03 ||
-                    (_global_pos.alt-alt0 >= _parameters.take_off_height_agl_trigger && _parameters.take_off_indoor)) // 2 sec
+                    (_global_pos.alt-_vControl.alt0 >= _parameters.take_off_height_agl_trigger && _parameters.take_off_indoor)) // 2 sec
             {
                 warnx("Transit to NoseDown Control");
                 present_time = hrt_absolute_time();
@@ -530,9 +522,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
         case CLIMBING :
             float _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
             // Present attitude from Quaternion to Euler ZXY
-            float _headingNow = atan2f(-2.0f * (_qAtt(1) * _qAtt(2) - _qAtt(0) * _qAtt(3)),
-                                       1.0f - 2.0f * (_qAtt(1) * _qAtt(1) + _qAtt(3) * _qAtt(3)));
-            float _bankNow = asinf(2.0f * (_qAtt(2) * _qAtt(3) + _qAtt(0) * _qAtt(1)));
+            float _headingNow = atan2f(-2.0f * (_vControl.qAtt(1) * _vControl.qAtt(2) - _vControl.qAtt(0) * _vControl.qAtt(3)),
+                                       1.0f - 2.0f * (_vControl.qAtt(1) * _vControl.qAtt(1) + _vControl.qAtt(3) * _vControl.qAtt(3)));
+            float _bankNow = asinf(2.0f * (_vControl.qAtt(2) * _vControl.qAtt(3) + _vControl.qAtt(0) * _vControl.qAtt(1)));
             // Quaternion with the right heading and elevation from nose down movement of present attitude - From Euler Rotation ZXY to Quaternion
             float cang[3] = {cosf(_headingNow / 2.0f), cosf(_bankNow / 2.0f), cosf(_elevDes / cosf(_bankNow) / 2.0f)};
             float sang[3] = {sinf(_headingNow / 2.0f), sinf(_bankNow / 2.0f), sinf(_elevDes / cosf(_bankNow) / 2.0f)};
@@ -543,14 +535,14 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _qElev(3) = cang[0] * sang[1] * sang[2] + sang[0] * cang[1] * cang[2];
             matrix::Eulerf _eulElev = _qElev;
             // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
-            _eulDes = matrix::Eulerf(0.0f, _eulElev(1), _eulElev(2));
-            _qDes = matrix::Quatf(_eulDes);
-            _qAtt2Des = _qAtt.inversed() * _qDes;
+			_vControl.eulDes = Eulerf(0.0f, _eulElev(1), _eulElev(2));
+            _vControl.qDes = Quatf(_vControl.eulDes);
+            _vControl.qDes = _vControl.qAtt.inversed() * _vControl.qDes;
             // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
-            float _pitchErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(3) + _qAtt2Des(0) * _qAtt2Des(2)),
-                                     1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(2) * _qAtt2Des(2)));
-            float _rollErr = asinf(-2.0f * (_qAtt2Des(2) * _qAtt2Des(3) - _qAtt2Des(0) * _qAtt2Des(1)));
-//								float   _yawErr = atan2f(2.0f * (_qAtt2Des(1) * _qAtt2Des(2) + _qAtt2Des(0) * _qAtt2Des(3)), 1.0f - 2.0f * (_qAtt2Des(1) * _qAtt2Des(1) + _qAtt2Des(3) * _qAtt2Des(3)));
+            float _pitchErr = atan2f(2.0f * (_vControl.qDes(1) * _vControl.qDes(3) + _vControl.qDes(0) * _vControl.qDes(2)),
+                                     1.0f - 2.0f * (_vControl.qDes(1) * _vControl.qDes(1) + _vControl.qDes(2) * _vControl.qDes(2)));
+            float _rollErr = asinf(-2.0f * (_vControl.qDes(2) * _vControl.qDes(3) - _vControl.qDes(0) * _vControl.qDes(1)));
+//								float   _yawErr = atan2f(2.0f * (_vControl.qDes(1) * _vControl.qDes(2) + _vControl.qDes(0) * _vControl.qDes(3)), 1.0f - 2.0f * (_vControl.qDes(1) * _vControl.qDes(1) + _vControl.qDes(3) * _vControl.qDes(3)));
 
             _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
             _actuators_airframe.control[1] = (_pitchErr * _parameters.take_off_climbing_pitch_kp -
