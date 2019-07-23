@@ -225,6 +225,7 @@ private:
         float take_off_climbing_roll_kp;
         float take_off_climbing_roll_kd;
         float take_off_climbing_yawrate_kp;
+        float take_off_height_agl_trigger;
 		bool take_off_indoor;
 
         /// <======= ///////////////////////////////////////////////////////////////////////
@@ -317,6 +318,7 @@ private:
         param_t take_off_climbing_roll_kp;
         param_t take_off_climbing_roll_kd;
         param_t take_off_climbing_yawrate_kp;
+        param_t take_off_height_agl_trigger;
         param_t take_off_indoor;
 
 
@@ -327,10 +329,10 @@ private:
 	bool take_off_trigger;
 
 	enum VerticalTakeoffSequence {
-		WAIT = 0, /**<  */
-		FLIP = 1, /**<  */
-		RISING = 2, /**<  */
-		CLIMBING = 3, /**<  */
+		WAIT, /**<  */
+		FLIP, /**<  */
+		RISING, /**<  */
+		CLIMBING, /**<  */
 	} ;
 	VerticalTakeoffSequence mode_seq;
 

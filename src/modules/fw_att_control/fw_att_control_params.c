@@ -246,6 +246,17 @@ PARAM_DEFINE_FLOAT(TK_CLB_YAWRAT_KP, 0.40f);
 */
 PARAM_DEFINE_INT32(TK_INDOOR, 0);
 
+/**
+ * Custom takeoff controller : Height above ground level AGL trigger
+ *
+ * @min 0.0
+ * @max  100.0
+ * @decimal 1
+ * @increment 0.1
+ * @group FW Attitude Control
+*/
+PARAM_DEFINE_FLOAT(TK_AGL_TRIG, 2.0f);
+
 /*
  * Controller parameters, accessible via MAVLink
  *

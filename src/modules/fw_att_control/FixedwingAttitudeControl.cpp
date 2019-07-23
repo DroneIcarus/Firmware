@@ -134,6 +134,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
     _parameter_handles.take_off_climbing_roll_kd= param_find("TK_CLB_ROLL_KD");
     _parameter_handles.take_off_climbing_yawrate_kp= param_find("TK_CLB_YAWRAT_KP");
     _parameter_handles.take_off_indoor= param_find("TK_INDOOR");
+    _parameter_handles.take_off_height_agl_trigger= param_find("TK_AGL_TRIG");
 
     /// <======= ////////////////////////////////////////////////////////////////////
 
@@ -250,6 +251,7 @@ FixedwingAttitudeControl::parameters_update()
     param_get(_parameter_handles.take_off_climbing_roll_kd, &_parameters.take_off_climbing_roll_kd);
     param_get(_parameter_handles.take_off_climbing_yawrate_kp, &_parameters.take_off_climbing_yawrate_kp);
     param_get(_parameter_handles.take_off_indoor, &_parameters.take_off_indoor);
+    param_get(_parameter_handles.take_off_height_agl_trigger, &_parameters.take_off_height_agl_trigger);
 
     /// <======= ////////////////////////////////////////////////////////////////////
 
@@ -516,7 +518,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03 ||
-                    (_global_pos.alt-alt0 >= 3.0f && _parameters.take_off_indoor)) // 2 sec
+                    (_global_pos.alt-alt0 >= _parameters.take_off_height_agl_trigger && _parameters.take_off_indoor)) // 2 sec
             {
                 warnx("Transit to NoseDown Control");
                 present_time = hrt_absolute_time();
