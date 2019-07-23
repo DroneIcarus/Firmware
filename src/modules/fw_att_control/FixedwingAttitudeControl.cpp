@@ -451,7 +451,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
     matrix::Quatf _qAtt = _att.q;
     matrix::Eulerf _eulAtt2Des;
     float R2D = 57.29578f;
-    float D2R = 1/R2D;
+    float D2R = 1.0f/R2D;
+    float alt0;
+    float _avgCoef = 0.2f;
 
     /* only for debug */
 //    static int _countPrint =0;
@@ -468,11 +470,13 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
+
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_01) //
             {
                 warnx("Etienne Start");
                 present_time = hrt_absolute_time();
                 mode_seq = FLIP;
+                alt0 = _global_pos.alt;
             }
             break;
 
@@ -483,6 +487,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+            alt0 = _avgCoef*_global_pos.alt + (1-_avgCoef) * alt0;
 
             if (hrt_absolute_time() - present_time >= 1000000) //(int)_parameters.take_off_custom_time_03) // 1 sec
             {
@@ -510,7 +515,8 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03) // 2 sec
+            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03 ||
+                    (_global_pos.alt-alt0 >= 3.0f && _parameters.take_off_indoor)) // 2 sec
             {
                 warnx("Transit to NoseDown Control");
                 present_time = hrt_absolute_time();
