@@ -488,6 +488,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 warnx("Transit to TakeOff Control");
                 present_time = hrt_absolute_time();
                 mode_seq = RISING;
+                warnx("_vControl.alt0 : %0.3f", (double)(_vControl.alt0));
             }
             break;
 
@@ -515,6 +516,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 warnx("Transit to NoseDown Control");
                 present_time = hrt_absolute_time();
                 mode_seq = CLIMBING;
+                warnx("_global_pos.alt : %0.3f", (double)(_global_pos.alt));
             }
             break;
 
