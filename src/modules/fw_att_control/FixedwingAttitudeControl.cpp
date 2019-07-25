@@ -450,7 +450,8 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 	_vControl.qAtt = _att.q;
 
     /* only for debug */
-//    static int _countPrint =0;
+    static int _countPrint =0;
+	bool etiTest;
 
     /* Sequences of the controller for the custom takeoff */
     float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
@@ -510,8 +511,17 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03 ||
-                    (_global_pos.alt-_vControl.alt0 >= _parameters.take_off_height_agl_trigger && _parameters.take_off_indoor)) // 2 sec
+			etiTest = (_global_pos.alt-_vControl.alt0 >= _parameters.take_off_height_agl_trigger) && _parameters.take_off_indoor;
+
+			if (++_countPrint >= 100)
+			{
+				warn("_vControl.alt0 : %0.3f", (double)(_vControl.alt0));
+				warn("_global_pos.alt : %0.3f", (double)(_global_pos.alt));
+				warn("check : %d", (bool)(etiTest));
+				_countPrint = 0;
+			}
+
+            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03 || etiTest) // 2 sec
             {
                 warnx("Transit to NoseDown Control");
                 present_time = hrt_absolute_time();
@@ -558,13 +568,6 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                                                                   _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-//            if (++_countPrint >= 100)
-//            {
-//                warn("Nose and Rud : %0.3f , %0.3f", (double)(_actuators_airframe.control[1]), (double)(_actuators_airframe.control[2]));
-//                warn("_eulDes : %0.3f , %0.3f , %0.3f", (double)(_eulDes(0)*R2D), (double)(_eulDes(1)*R2D), (double)(_eulDes(2)*R2D));
-//                warn("pitch_roll_Err : %0.3f , %0.3f", (double)(_pitchErr)*R2D, (double)(_rollErr)*R2D);
-//                _countPrint = 0;
-//            }
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
             {
