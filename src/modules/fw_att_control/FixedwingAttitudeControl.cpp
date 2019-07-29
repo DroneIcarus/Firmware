@@ -471,7 +471,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 warnx("Etienne Start");
                 present_time = hrt_absolute_time();
                 mode_seq = FLIP;
-                _vControl.alt0 = _global_pos.alt;
+                _vControl.alt0 = _local_pos.z;
             }
             break;
 
@@ -482,7 +482,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
-            _vControl.alt0 = EMACOEF*_global_pos.alt + (1-EMACOEF) * _vControl.alt0;
+            _vControl.alt0 = EMACOEF*_local_pos.z + (1-EMACOEF) * _vControl.alt0;
 
             if (hrt_absolute_time() - present_time >= 1000000) //(int)_parameters.take_off_custom_time_03) // 1 sec
             {
@@ -511,12 +511,12 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-			etiTest = (_global_pos.alt-_vControl.alt0 >= _parameters.take_off_height_agl_trigger) && _parameters.take_off_indoor;
+			etiTest = (_local_pos.z-_vControl.alt0 >= _parameters.take_off_height_agl_trigger) && _parameters.take_off_indoor;
 
 			if (++_countPrint >= 100)
 			{
 				warn("_vControl.alt0 : %0.3f", (double)(_vControl.alt0));
-				warn("_global_pos.alt : %0.3f", (double)(_global_pos.alt));
+				warn("_local_pos.z : %0.3f", (double)(_local_pos.z));
 				warn("check : %d", (bool)(etiTest));
 				_countPrint = 0;
 			}
@@ -526,7 +526,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 warnx("Transit to NoseDown Control");
                 present_time = hrt_absolute_time();
                 mode_seq = CLIMBING;
-                warnx("_global_pos.alt : %0.3f", (double)(_global_pos.alt));
+                warnx("_local_pos.z : %0.3f", (double)(_local_pos.z));
             }
             break;
 
@@ -610,6 +610,7 @@ void FixedwingAttitudeControl::run()
 	_params_sub = orb_subscribe(ORB_ID(parameter_update));
 	_manual_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 	_global_pos_sub = orb_subscribe(ORB_ID(vehicle_global_position));
+    _local_pos_sub = orb_subscribe(ORB_ID(vehicle_local_position));
 	_vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 	_vehicle_land_detected_sub = orb_subscribe(ORB_ID(vehicle_land_detected));
 	_battery_status_sub = orb_subscribe(ORB_ID(battery_status));
@@ -689,6 +690,7 @@ void FixedwingAttitudeControl::run()
 
 			/* load local copies */
 			orb_copy(ORB_ID(vehicle_attitude), _att_sub, &_att);
+            orb_copy(ORB_ID(vehicle_local_position), _local_pos_sub, &_local_pos);
 
 			/* get current rotation matrix and euler angles from control state quaternions */
 			matrix::Dcmf R = matrix::Quatf(_att.q);

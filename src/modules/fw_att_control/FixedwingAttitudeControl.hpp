@@ -61,6 +61,7 @@
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_land_detected.h>
+#include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <vtol_att_control/vtol_type.h>
@@ -100,6 +101,7 @@ private:
 	int		_att_sp_sub{-1};			/**< vehicle attitude setpoint */
 	int		_battery_status_sub{-1};		/**< battery status subscription */
 	int		_global_pos_sub{-1};			/**< global position subscription */
+    int		_local_pos_sub{-1};
 	int		_manual_sub{-1};			/**< notification of manual control updates */
 	int		_params_sub{-1};			/**< notification of parameter updates */
 	int		_vcontrol_mode_sub{-1};			/**< vehicle status subscription */
@@ -123,6 +125,7 @@ private:
 	vehicle_attitude_setpoint_s		_att_sp {};		/**< vehicle attitude setpoint */
 	vehicle_control_mode_s			_vcontrol_mode {};	/**< vehicle control mode */
 	vehicle_global_position_s		_global_pos {};		/**< global position */
+    vehicle_local_position_s	_local_pos {};			///< vehicle local position */
 	vehicle_rates_setpoint_s		_rates_sp {};		/* attitude rates setpoint */
 	vehicle_status_s			_vehicle_status {};	/**< vehicle status */
 
