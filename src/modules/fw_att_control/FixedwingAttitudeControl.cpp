@@ -450,7 +450,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 	_vControl.qAtt = _att.q;
 
     /* only for debug */
-    static int _countPrint =0;
+//    static int _countPrint =0;
 	bool etiTest;
 
     /* Sequences of the controller for the custom takeoff */
@@ -513,13 +513,13 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 
 			etiTest = (_local_pos.z-_vControl.alt0 >= _parameters.take_off_height_agl_trigger) && _parameters.take_off_indoor;
 
-			if (++_countPrint >= 100)
-			{
-				warn("_vControl.alt0 : %0.3f", (double)(_vControl.alt0));
-				warn("_local_pos.z : %0.3f", (double)(_local_pos.z));
-				warn("check : %d", (bool)(etiTest));
-				_countPrint = 0;
-			}
+//			if (++_countPrint >= 100)
+//			{
+//				warn("_vControl.alt0 : %0.3f", (double)(_vControl.alt0));
+//				warn("_local_pos.z : %0.3f", (double)(_local_pos.z));
+//				warn("check : %d", (bool)(etiTest));
+//				_countPrint = 0;
+//			}
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03 || etiTest) // 2 sec
             {
