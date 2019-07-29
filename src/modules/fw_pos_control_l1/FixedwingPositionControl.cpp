@@ -1411,6 +1411,7 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 				mavlink_log_info(&_mavlink_log_pub,"take off normal");
 				warnx("take off normal");
 				flag_message_takeoff_normal = true;
+				warnx("From Pos = _global_pos.alt : %0.3f", (double)(_global_pos.alt));
 			}
 
 			_att_sp.decollage_custom = false;
@@ -1423,6 +1424,7 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 				mavlink_log_info(&_mavlink_log_pub,"take off custom");
 				warnx("take off custom");
 				flag_message_takeoff_custom = true;
+				warnx("From Pos = _global_pos.alt : %0.3f", (double)(_global_pos.alt));
 			}
 
 			_att_sp.roll_body = _runway_takeoff.getRoll(_l1_control.get_roll_setpoint());
