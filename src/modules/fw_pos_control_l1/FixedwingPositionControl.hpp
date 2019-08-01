@@ -257,6 +257,17 @@ private:
 	ECL_L1_Pos_Controller	_l1_control;
 	TECS			_tecs;
 
+	/// ========> ////////////////////////////////////////////////////////////////////
+	// Etienne - Suwave custom parameters for vertical aquatic takeoff
+	struct {
+		float total_time_takeoff{0.0f};
+		float time_begin_take_off{0.0f};
+		bool flag_message_takeoff_normal{false};
+		bool flag_message_takeoff_custom{false};
+	} _tkCustomTrig;
+	/// <======= ///////////////////////////////////////////////////////////////////////
+
+
 	enum FW_POSCTRL_MODE {
 		FW_POSCTRL_MODE_AUTO,
 		FW_POSCTRL_MODE_POSITION,
