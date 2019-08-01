@@ -340,7 +340,7 @@ private:
 		Quatf qAtt2Des;
 		Quatf qAtt;
 		Eulerf eulAtt2Des;
-    } _vControl;
+    } _verticalTk;
 
 	enum VerticalTakeoffSequence {
 		WAIT, /**<  */
