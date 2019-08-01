@@ -1193,39 +1193,39 @@ FixedwingPositionControl::control_position(const Vector2f &curr_pos, const Vecto
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////===========>
-
-    /* As per Gabriel Guilmain's work from summer 2017, à compléter!!!! */
-    // Etienne et Étienne
-    if(!_control_mode.flag_control_auto_enabled)
-    {
-        // param pour take off
-//        time_begin_take_off = hrt_absolute_time();
-
-        _att_sp.decollage_custom = false;
-
-//        flag_message_takeoff_normal = false;
-//        flag_message_takeoff_custom = false;
-
-        // param pour landing
-//        time_begin_landing = hrt_absolute_time();
-//        mode_landing_01 = true;
-//        mode_landing_03 = false;
-    }
-
-    if(pos_sp_curr.type != position_setpoint_s::SETPOINT_TYPE_LAND)
-    {
-        // param pour landing
-//        time_begin_landing = hrt_absolute_time();
-//        mode_landing_01 = true;
-//        mode_landing_03 = false;
-//        flag_landing = true;
-    }
-
-    // takeoff custom: reset flag if takeoff dected before end of custom takeoff...
-    if(pos_sp_curr.type != position_setpoint_s::SETPOINT_TYPE_TAKEOFF)
-    {
-        _att_sp.decollage_custom = false;
-    }
+//
+//    /* As per Gabriel Guilmain's work from summer 2017, à compléter!!!! */
+//    // Etienne et Étienne
+//    if(!_control_mode.flag_control_auto_enabled)
+//    {
+//        // param pour take off
+////        time_begin_take_off = hrt_absolute_time();
+//
+//        _att_sp.decollage_custom = false;
+//
+////        flag_message_takeoff_normal = false;
+////        flag_message_takeoff_custom = false;
+//
+//        // param pour landing
+////        time_begin_landing = hrt_absolute_time();
+////        mode_landing_01 = true;
+////        mode_landing_03 = false;
+//    }
+//
+//    if(pos_sp_curr.type != position_setpoint_s::SETPOINT_TYPE_LAND)
+//    {
+//        // param pour landing
+////        time_begin_landing = hrt_absolute_time();
+////        mode_landing_01 = true;
+////        mode_landing_03 = false;
+////        flag_landing = true;
+//    }
+//
+//    // takeoff custom: reset flag if takeoff dected before end of custom takeoff...
+//    if(pos_sp_curr.type != position_setpoint_s::SETPOINT_TYPE_TAKEOFF)
+//    {
+//        _att_sp.decollage_custom = false;
+//    }
     ///<===========================////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1307,10 +1307,9 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 {
 	/// ========> ////////////////////////////////////////////////////////////////////
 	// Etienne - Settings to enable Attitude Control for custom vertical takeoff for TakeOff waypoint
-	static int time_begin_take_off = 0;
-	static bool flag_message_takeoff_normal = false;
-	static bool flag_message_takeoff_custom = false;
-	float total_time_takeoff = _parameters.take_off_custom_time_01 + 1000000.0f + _parameters.take_off_custom_time_03 + _parameters.take_off_custom_time_04;
+//    _tkCustomTrig.time_begin_take_off = 0;
+//    _tkCustomTrig.flag_message_takeoff_normal = false;
+//    _tkCustomTrig.flag_message_takeoff_custom = false;
 
 	/// <======== ////////////////////////////////////////////////////////////////////
 
@@ -1341,14 +1340,14 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		_launch_detection_state = LAUNCHDETECTION_RES_NONE;
 		_launch_detection_notify = 0;
 
-		/// ========> ////////////////////////////////////////////////////////////////////
-		// Etienne - Settings to enable Attitude Control for vertical takeoff for TakeOff waypoint
-		time_begin_take_off = hrt_absolute_time();
-		_att_sp.decollage_custom = false;
-
-		flag_message_takeoff_normal = false;
-		flag_message_takeoff_custom = false;
-		/// <======== ////////////////////////////////////////////////////////////////////
+//		/// ========> ////////////////////////////////////////////////////////////////////
+//		// Etienne - Settings to enable Attitude Control for vertical takeoff for TakeOff waypoint
+//        _tkCustomTrig.time_begin_take_off = hrt_absolute_time();
+//		_att_sp.decollage_custom = false;
+//
+//        _tkCustomTrig.flag_message_takeoff_normal = false;
+//        _tkCustomTrig.flag_message_takeoff_custom = false;
+//		/// <======== ////////////////////////////////////////////////////////////////////
 
 	}
 
@@ -1361,7 +1360,11 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 			 * doesn't matter if it gets reset when takeoff is detected eventually */
 			_takeoff_ground_alt = _global_pos.alt;
 
-			mavlink_log_info(&_mavlink_log_pub, "Takeoff on runway");
+            _tkCustomTrig.total_time_takeoff = _parameters.take_off_custom_time_01 + 1000000.0f + _parameters.take_off_custom_time_03 + _parameters.take_off_custom_time_04;
+            _tkCustomTrig.time_begin_take_off = hrt_absolute_time();
+
+
+            mavlink_log_info(&_mavlink_log_pub, "Takeoff on runway");
 		}
 
 		float terrain_alt = get_terrain_altitude_takeoff(_takeoff_ground_alt, _global_pos);
@@ -1400,38 +1403,24 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		// Etienne - Sequence to enable Attitude Control for custom vertical takeoff for TakeOff waypoint
 
 		// attitude setpoint from standard Px4 controller
-		if(hrt_absolute_time() - time_begin_take_off >= total_time_takeoff){
-			_att_sp.roll_body = _runway_takeoff.getRoll(_l1_control.get_roll_setpoint());
-			_att_sp.yaw_body = _runway_takeoff.getYaw(_l1_control.nav_bearing());
-			_att_sp.fw_control_yaw = _runway_takeoff.controlYaw();
-			_att_sp.pitch_body = _runway_takeoff.getPitch(get_tecs_pitch());
-
-			if(!flag_message_takeoff_normal)
-			{
+		if(hrt_absolute_time() - _tkCustomTrig.time_begin_take_off >= _tkCustomTrig.total_time_takeoff){
+			if(!_tkCustomTrig.flag_message_takeoff_normal)			{
 				mavlink_log_info(&_mavlink_log_pub,"take off normal");
 				warnx("take off normal");
-				flag_message_takeoff_normal = true;
+                _tkCustomTrig.flag_message_takeoff_normal = true;
 				warnx("From Pos = _global_pos.alt : %0.3f", (double)(_global_pos.alt));
 			}
-
 			_att_sp.decollage_custom = false;
 		}
-		// attitude setpoint lors du decollage custom du drone aquatique
-		else if((hrt_absolute_time() - time_begin_take_off < total_time_takeoff) && _control_mode.flag_armed) {
 
-			if(!flag_message_takeoff_custom)
-			{
+		// attitude setpoint lors du decollage custom du drone aquatique
+		else if((hrt_absolute_time() - _tkCustomTrig.time_begin_take_off < _tkCustomTrig.total_time_takeoff) && _control_mode.flag_armed) {
+			if(!_tkCustomTrig.flag_message_takeoff_custom)			{
 				mavlink_log_info(&_mavlink_log_pub,"take off custom");
 				warnx("take off custom");
-				flag_message_takeoff_custom = true;
+                _tkCustomTrig.flag_message_takeoff_custom = true;
 				warnx("From Pos = _global_pos.alt : %0.3f", (double)(_global_pos.alt));
 			}
-
-			_att_sp.roll_body = _runway_takeoff.getRoll(_l1_control.get_roll_setpoint());
-			_att_sp.yaw_body = _runway_takeoff.getYaw(_l1_control.nav_bearing());
-			_att_sp.fw_control_yaw = _runway_takeoff.controlYaw();
-			_att_sp.pitch_body = _runway_takeoff.getPitch(get_tecs_pitch());
-
 			_att_sp.decollage_custom = true;
 		}
 
@@ -2000,6 +1989,15 @@ FixedwingPositionControl::reset_takeoff_state()
 		_launchDetector.reset();
 		_launch_detection_state = LAUNCHDETECTION_RES_NONE;
 		_launch_detection_notify = 0;
+
+        _tkCustomTrig.time_begin_take_off = 0;
+        _att_sp.decollage_custom = false;
+
+        _tkCustomTrig.flag_message_takeoff_normal = false;
+        _tkCustomTrig.flag_message_takeoff_custom = false;
+
+        mavlink_log_info(&_mavlink_log_pub,"reset takeoff state()");
+        warnx("reset takeoff state()");
 
 	} else {
 		_launch_detection_state = LAUNCHDETECTION_RES_DETECTED_ENABLEMOTORS;
