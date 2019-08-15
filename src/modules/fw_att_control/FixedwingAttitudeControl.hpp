@@ -335,10 +335,11 @@ private:
 	bool take_off_trigger;
     struct {
         float alt0;
+		Eulerf eulAtt;
+		Quatf qAtt;
 		Eulerf eulDes;
 		Quatf qDes;
 		Quatf qAtt2Des;
-		Quatf qAtt;
 		Eulerf eulAtt2Des;
     } _verticalTk;
 
