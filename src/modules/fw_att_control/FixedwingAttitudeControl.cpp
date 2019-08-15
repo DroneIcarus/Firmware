@@ -502,8 +502,8 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
 			_verticalTk.eulDes = Eulerf(0.0f, _parameters.take_off_rising_pitch_des*D2R, 0.0f);
             _verticalTk.qDes = Quatf(_verticalTk.eulDes);
-            _verticalTk.qDes = _verticalTk.qAtt.inversed() * _verticalTk.qDes;
-            _verticalTk.eulAtt2Des = _verticalTk.qDes;
+            _verticalTk.qAtt2Des = _verticalTk.qAtt.inversed() * _verticalTk.qDes;
+            _verticalTk.eulAtt2Des = _verticalTk.qAtt2Des;
 
             _actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp * _verticalTk.eulAtt2Des(1) -
                                               _parameters.take_off_rising_pitch_kd * _att.pitchspeed) * r2servo +
@@ -559,12 +559,12 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
 			_verticalTk.eulDes = Eulerf(0.0f, _eulElev(1), _eulElev(2));
             _verticalTk.qDes = Quatf(_verticalTk.eulDes);
-            _verticalTk.qDes = _verticalTk.qAtt.inversed() * _verticalTk.qDes;
+            _verticalTk.qAtt2Des = _verticalTk.qAtt.inversed() * _verticalTk.qDes;
             // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
-            float _pitchErr = atan2f(2.0f * (_verticalTk.qDes(1) * _verticalTk.qDes(3) + _verticalTk.qDes(0) * _verticalTk.qDes(2)),
-                                     1.0f - 2.0f * (_verticalTk.qDes(1) * _verticalTk.qDes(1) + _verticalTk.qDes(2) * _verticalTk.qDes(2)));
-            float _rollErr = asinf(-2.0f * (_verticalTk.qDes(2) * _verticalTk.qDes(3) - _verticalTk.qDes(0) * _verticalTk.qDes(1)));
-//								float   _yawErr = atan2f(2.0f * (_verticalTk.qDes(1) * _verticalTk.qDes(2) + _verticalTk.qDes(0) * _verticalTk.qDes(3)), 1.0f - 2.0f * (_verticalTk.qDes(1) * _verticalTk.qDes(1) + _verticalTk.qDes(3) * _verticalTk.qDes(3)));
+            float _pitchErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(3) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(2)),
+                                     1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2)));
+            float _rollErr = asinf(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)));
+//								float   _yawErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)), 1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
 
             _actuators_airframe.control[1] = (_pitchErr * _parameters.take_off_climbing_pitch_kp -
                                               _att.pitchspeed * _parameters.take_off_climbing_pitch_kd) * r2servo +
