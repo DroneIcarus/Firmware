@@ -987,12 +987,11 @@ void FixedwingAttitudeControl::run()
 
                                 take_off_trigger = false;
                             }
-
-                            if (mode_take_off_custom) {
-                                vertical_takeoff_controller();
-                            }
                         }
 
+                        if (mode_take_off_custom) {
+                            vertical_takeoff_controller();
+                        }
                         ////<===========================////////////////////////////////////////////////////////////////
                         /////////////////////////////////////////////////////////////////////////////////////////////
 
