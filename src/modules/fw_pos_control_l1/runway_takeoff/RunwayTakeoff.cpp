@@ -89,6 +89,7 @@ void RunwayTakeoff::update(float airspeed, float alt_agl,
 		if (airspeed > _airspeed_min.get() * _min_airspeed_scaling.get()) {
 			_state = RunwayTakeoffState::TAKEOFF;
 			mavlink_log_info(mavlink_log_pub, "#Takeoff airspeed reached");
+			warnx("From RunwayTakeoff: Takeoff airspeed reached, transit to TAKEOFF");
 		}
 
 		break;
@@ -107,6 +108,7 @@ void RunwayTakeoff::update(float airspeed, float alt_agl,
 			}
 
 			mavlink_log_info(mavlink_log_pub, "#Climbout");
+			warnx("From RunwayTakeoff: alt_agl > _nav_alt , transit to CLIMBOUT");
 		}
 
 		break;
@@ -116,6 +118,7 @@ void RunwayTakeoff::update(float airspeed, float alt_agl,
 			_climbout = false;
 			_state = RunwayTakeoffState::FLY;
 			mavlink_log_info(mavlink_log_pub, "#Navigating to waypoint");
+			warnx("From RunwayTakeoff: alt_agl > _climbout_diff, transit to FLY");
 		}
 
 		break;

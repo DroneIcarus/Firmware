@@ -1365,6 +1365,7 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 
 
             mavlink_log_info(&_mavlink_log_pub, "Takeoff on runway");
+            warnx("From Pos Control : Takeoff on runway");
 		}
 
 		float terrain_alt = get_terrain_altitude_takeoff(_takeoff_ground_alt, _global_pos);
@@ -1406,9 +1407,9 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		if(hrt_absolute_time() - _tkCustomTrig.time_begin_take_off >= _tkCustomTrig.total_time_takeoff){
 			if(!_tkCustomTrig.flag_message_takeoff_normal)			{
 				mavlink_log_info(&_mavlink_log_pub,"take off normal");
-				warnx("take off normal");
+				warnx("From Pos Control : take off normal");
                 _tkCustomTrig.flag_message_takeoff_normal = true;
-				warnx("From Pos = _global_pos.alt : %0.3f", (double)(_global_pos.alt));
+				warnx("From Pos Control : _global_pos.alt : %0.3f", (double)(_global_pos.alt));
 			}
 			_att_sp.decollage_custom = false;
 		}
@@ -1417,9 +1418,9 @@ FixedwingPositionControl::control_takeoff(const Vector2f &curr_pos, const Vector
 		else if((hrt_absolute_time() - _tkCustomTrig.time_begin_take_off < _tkCustomTrig.total_time_takeoff) && _control_mode.flag_armed) {
 			if(!_tkCustomTrig.flag_message_takeoff_custom)			{
 				mavlink_log_info(&_mavlink_log_pub,"take off custom");
-				warnx("take off custom");
+				warnx("From Pos Control : take off custom");
                 _tkCustomTrig.flag_message_takeoff_custom = true;
-				warnx("From Pos = _global_pos.alt : %0.3f", (double)(_global_pos.alt));
+				warnx("From Pos Control : _global_pos.alt : %0.3f", (double)(_global_pos.alt));
 			}
 			_att_sp.decollage_custom = true;
 		}
