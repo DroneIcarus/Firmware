@@ -58,7 +58,7 @@ RunwayTakeoff::RunwayTakeoff(ModuleParams *parent) :
 	_initialized_time(0),
 	_init_yaw(0),
 	_climbout(false),
-	_throttle_ramp_time(2 * 1e6)
+	_throttle_ramp_time(2 * 1e5)
 {
 }
 
@@ -80,7 +80,9 @@ void RunwayTakeoff::update(float airspeed, float alt_agl,
 	switch (_state) {
 	case RunwayTakeoffState::THROTTLE_RAMP:
 		if (hrt_elapsed_time(&_initialized_time) > _throttle_ramp_time) {
-			_state = RunwayTakeoffState::CLAMPED_TO_RUNWAY;
+			_state = RunwayTakeoffState::CLIMBOUT;
+            mavlink_log_info(mavlink_log_pub, "#Transit to RunwayTakeoff state CLIMBOUT");
+            warnx("Transit to RunwayTakeoff state CLIMBOUT");
 		}
 
 		break;
