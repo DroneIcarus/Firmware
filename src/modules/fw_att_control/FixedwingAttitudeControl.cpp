@@ -512,8 +512,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 			// Conversion du quaternion d'erreur en angle d'erreur via une transformée YZX pour permettre un pitchErr > 90
 			_pitchErr = atan2f(-2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(2)),
 									 1.0f - 2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
-			_yawErr = asinf(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)));
-
+			_yawErr = asinf(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)));
+//            _rollErr = atan2f(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)),
+//                              1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
 
 			_actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp * _pitchErr -
                                               _parameters.take_off_rising_pitch_kd * _att.pitchspeed) * r2servo +
