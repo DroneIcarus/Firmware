@@ -1899,8 +1899,8 @@ void Commander::run()
 					else
 					{
 						mavlink_and_console_log_info(&mavlink_log_pub, "Takeoff detected");
-						warnx("From Commander : Takeoff detected")
-							have_taken_off_since_arming = true;
+						warnx("From Commander : Takeoff detected");
+						have_taken_off_since_arming = true;
 
 						// Set all position and velocity test probation durations to takeoff value
 						// This is a larger value to give the vehicle time to complete a failsafe landing
