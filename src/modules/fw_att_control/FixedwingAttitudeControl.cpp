@@ -119,6 +119,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
     _parameter_handles.take_off_custom_time_01 = param_find("TK_WAIT_TIME");
     _parameter_handles.take_off_custom_time_03 = param_find("TK_RISE_TIME");
     _parameter_handles.take_off_custom_time_04 = param_find("TK_CLIMB_TIME");
+	_parameter_handles.take_off_prop_fly= param_find("TK_PROP_FLY");
     _parameter_handles.take_off_prop_horizontal= param_find("TK_PROP_HORI");
     _parameter_handles.take_off_prop_vertical= param_find("TK_PROP_VERT");
     _parameter_handles.take_off_rudder_offset= param_find("TK_RUDDER_OFF");
@@ -236,6 +237,7 @@ FixedwingAttitudeControl::parameters_update()
     param_get(_parameter_handles.take_off_custom_time_01, &_parameters.take_off_custom_time_01);
     param_get(_parameter_handles.take_off_custom_time_03, &_parameters.take_off_custom_time_03);
     param_get(_parameter_handles.take_off_custom_time_04, &_parameters.take_off_custom_time_04);
+	param_get(_parameter_handles.take_off_prop_fly, &_parameters.take_off_prop_fly);
     param_get(_parameter_handles.take_off_prop_horizontal, &_parameters.take_off_prop_horizontal);
     param_get(_parameter_handles.take_off_prop_vertical, &_parameters.take_off_prop_vertical);
     param_get(_parameter_handles.take_off_rudder_offset, &_parameters.take_off_rudder_offset);
@@ -376,7 +378,7 @@ FixedwingAttitudeControl::vehicle_manual_poll()
 							_parameters.trim_pitch;
 					_actuators.control[actuator_controls_s::INDEX_YAW] = _manual.r * _parameters.man_yaw_scale + _parameters.trim_yaw;
 					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
-                    _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+                    _actuators_airframe.control[1] = _parameters.take_off_prop_fly;
                     _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
 				}
 			}
@@ -467,7 +469,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
         // 1 - WAIT AVANT LA SEQUENCE (FALCULTATIF)
         case WAIT :
             _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
-            _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal; //0.28f;
+            _actuators_airframe.control[1] = _parameters.take_off_prop_fly; //0.28f;
             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
@@ -1008,7 +1010,7 @@ void FixedwingAttitudeControl::run()
 
                         /* If no custom takeoff, throttle comes from PositionController through _att_sp.thrust*/
                         else {
-                            _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+                            _actuators_airframe.control[1] = _parameters.take_off_prop_fly;
                             _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
 
                             /* throttle passed through if it is finite and if no engine failure was detected */
@@ -1078,7 +1080,7 @@ void FixedwingAttitudeControl::run()
 					_actuators.control[actuator_controls_s::INDEX_YAW] = (PX4_ISFINITE(yaw_u)) ? yaw_u + trim_yaw : trim_yaw;
 
 					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = PX4_ISFINITE(_rates_sp.thrust) ? _rates_sp.thrust : 0.0f;
-                    _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+                    _actuators_airframe.control[1] = _parameters.take_off_prop_fly;
                     _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
                 }
 
@@ -1098,7 +1100,7 @@ void FixedwingAttitudeControl::run()
 
 //            if(!_vcontrol_mode.flag_control_attitude_enabled || !_vcontrol_mode.flag_control_rates_enabled || (!_vcontrol_mode.flag_control_climb_rate_enabled && !_vcontrol_mode.flag_control_offboard_enabled))
 //            {
-//                _actuators_airframe.control[1] = _parameters.take_off_prop_horizontal;
+//                _actuators_airframe.control[1] = _parameters.take_off_prop_fly;
 //                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
 //
 //                present_time = hrt_absolute_time();

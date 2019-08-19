@@ -82,6 +82,18 @@ PARAM_DEFINE_FLOAT(TK_RISE_TIME, 2000000.0f);
 PARAM_DEFINE_FLOAT(TK_CLIMB_TIME, 2000000.0f);
 
 /**
+ * Custom takeoff trim: Prop servo, flying position
+ *
+ * @unit s
+ * @min -1.0
+ * @max 1.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_PROP_FLY, 0.0f);
+
+/**
  * Custom takeoff trim: Prop servo, horizontal position
  *
  * @unit s
@@ -511,7 +523,6 @@ PARAM_DEFINE_FLOAT(FW_RLL_TO_YAW_FF, 0.0f);
  * @group FW Attitude Control
  */
 PARAM_DEFINE_INT32(FW_W_EN, 0);
-
 
 /**
  * Wheel steering rate proportional gain

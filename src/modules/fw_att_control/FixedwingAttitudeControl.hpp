@@ -31,7 +31,7 @@
  *
  ****************************************************************************/
 #define R2D 57.29578f
-#define D2R 1.0f/R2D
+#define D2R 1.0f / R2D
 #define EMACOEF 0.2f
 
 #include <px4_module.h>
@@ -96,44 +96,43 @@ public:
 	int print_status() override;
 
 private:
+	int _att_sub{-1};			 /**< vehicle attitude */
+	int _att_sp_sub{-1};		 /**< vehicle attitude setpoint */
+	int _battery_status_sub{-1}; /**< battery status subscription */
+	int _global_pos_sub{-1};	 /**< global position subscription */
+	int _local_pos_sub{-1};
+	int _manual_sub{-1};				/**< notification of manual control updates */
+	int _params_sub{-1};				/**< notification of parameter updates */
+	int _vcontrol_mode_sub{-1};			/**< vehicle status subscription */
+	int _vehicle_land_detected_sub{-1}; /**< vehicle land detected subscription */
+	int _vehicle_status_sub{-1};		/**< vehicle status subscription */
 
-	int		_att_sub{-1};				/**< vehicle attitude */
-	int		_att_sp_sub{-1};			/**< vehicle attitude setpoint */
-	int		_battery_status_sub{-1};		/**< battery status subscription */
-	int		_global_pos_sub{-1};			/**< global position subscription */
-    int		_local_pos_sub{-1};
-	int		_manual_sub{-1};			/**< notification of manual control updates */
-	int		_params_sub{-1};			/**< notification of parameter updates */
-	int		_vcontrol_mode_sub{-1};			/**< vehicle status subscription */
-	int		_vehicle_land_detected_sub{-1};		/**< vehicle land detected subscription */
-	int		_vehicle_status_sub{-1};		/**< vehicle status subscription */
+	orb_advert_t _rate_sp_pub{nullptr};			 /**< rate setpoint publication */
+	orb_advert_t _attitude_sp_pub{nullptr};		 /**< attitude setpoint point */
+	orb_advert_t _actuators_0_pub{nullptr};		 /**< actuator control group 0 setpoint */
+	orb_advert_t _actuators_2_pub{nullptr};		 /**< actuator control group 1 setpoint (Airframe) */
+	orb_advert_t _rate_ctrl_status_pub{nullptr}; /**< rate controller status publication */
 
-	orb_advert_t	_rate_sp_pub{nullptr};			/**< rate setpoint publication */
-	orb_advert_t	_attitude_sp_pub{nullptr};		/**< attitude setpoint point */
-	orb_advert_t	_actuators_0_pub{nullptr};		/**< actuator control group 0 setpoint */
-	orb_advert_t	_actuators_2_pub{nullptr};		/**< actuator control group 1 setpoint (Airframe) */
-	orb_advert_t	_rate_ctrl_status_pub{nullptr};		/**< rate controller status publication */
-
-	orb_id_t _rates_sp_id{nullptr};	// pointer to correct rates setpoint uORB metadata structure
-	orb_id_t _actuators_id{nullptr};	// pointer to correct actuator controls0 uORB metadata structure
+	orb_id_t _rates_sp_id{nullptr};  // pointer to correct rates setpoint uORB metadata structure
+	orb_id_t _actuators_id{nullptr}; // pointer to correct actuator controls0 uORB metadata structure
 	orb_id_t _attitude_setpoint_id{nullptr};
 
-	actuator_controls_s			_actuators {};		/**< actuator control inputs */
-	actuator_controls_s			_actuators_airframe {};	/**< actuator control inputs */
-	manual_control_setpoint_s		_manual {};		/**< r/c channel data */
-	vehicle_attitude_s			_att {};		/**< vehicle attitude setpoint */
-	vehicle_attitude_setpoint_s		_att_sp {};		/**< vehicle attitude setpoint */
-	vehicle_control_mode_s			_vcontrol_mode {};	/**< vehicle control mode */
-	vehicle_global_position_s		_global_pos {};		/**< global position */
-    vehicle_local_position_s	_local_pos {};			///< vehicle local position */
-	vehicle_rates_setpoint_s		_rates_sp {};		/* attitude rates setpoint */
-	vehicle_status_s			_vehicle_status {};	/**< vehicle status */
+	actuator_controls_s _actuators{};		   /**< actuator control inputs */
+	actuator_controls_s _actuators_airframe{}; /**< actuator control inputs */
+	manual_control_setpoint_s _manual{};	   /**< r/c channel data */
+	vehicle_attitude_s _att{};				   /**< vehicle attitude setpoint */
+	vehicle_attitude_setpoint_s _att_sp{};	 /**< vehicle attitude setpoint */
+	vehicle_control_mode_s _vcontrol_mode{};   /**< vehicle control mode */
+	vehicle_global_position_s _global_pos{};   /**< global position */
+	vehicle_local_position_s _local_pos{};	 ///< vehicle local position */
+	vehicle_rates_setpoint_s _rates_sp{};	  /* attitude rates setpoint */
+	vehicle_status_s _vehicle_status{};		   /**< vehicle status */
 
-	Subscription<airspeed_s>			_airspeed_sub;
+	Subscription<airspeed_s> _airspeed_sub;
 
-	perf_counter_t	_loop_perf;			/**< loop performance counter */
-	perf_counter_t	_nonfinite_input_perf;		/**< performance counter for non finite input */
-	perf_counter_t	_nonfinite_output_perf;		/**< performance counter for non finite output */
+	perf_counter_t _loop_perf;			   /**< loop performance counter */
+	perf_counter_t _nonfinite_input_perf;  /**< performance counter for non finite input */
+	perf_counter_t _nonfinite_output_perf; /**< performance counter for non finite output */
 
 	float _flaps_applied{0.0f};
 	float _flaperons_applied{0.0f};
@@ -144,7 +143,8 @@ private:
 
 	bool _flag_control_attitude_enabled_last{false};
 
-	struct {
+	struct
+	{
 		float p_tc;
 		float p_p;
 		float p_i;
@@ -187,58 +187,60 @@ private:
 		float dtrim_yaw_vmax;
 		float dtrim_roll_flaps;
 		float dtrim_pitch_flaps;
-		float rollsp_offset_deg;		/**< Roll Setpoint Offset in deg */
-		float pitchsp_offset_deg;		/**< Pitch Setpoint Offset in deg */
-		float rollsp_offset_rad;		/**< Roll Setpoint Offset in rad */
-		float pitchsp_offset_rad;		/**< Pitch Setpoint Offset in rad */
-		float man_roll_max;				/**< Max Roll in rad */
-		float man_pitch_max;			/**< Max Pitch in rad */
-		float man_roll_scale;			/**< scale factor applied to roll actuator control in pure manual mode */
-		float man_pitch_scale;			/**< scale factor applied to pitch actuator control in pure manual mode */
-		float man_yaw_scale; 			/**< scale factor applied to yaw actuator control in pure manual mode */
+		float rollsp_offset_deg;  /**< Roll Setpoint Offset in deg */
+		float pitchsp_offset_deg; /**< Pitch Setpoint Offset in deg */
+		float rollsp_offset_rad;  /**< Roll Setpoint Offset in rad */
+		float pitchsp_offset_rad; /**< Pitch Setpoint Offset in rad */
+		float man_roll_max;		  /**< Max Roll in rad */
+		float man_pitch_max;	  /**< Max Pitch in rad */
+		float man_roll_scale;	 /**< scale factor applied to roll actuator control in pure manual mode */
+		float man_pitch_scale;	/**< scale factor applied to pitch actuator control in pure manual mode */
+		float man_yaw_scale;	  /**< scale factor applied to yaw actuator control in pure manual mode */
 
 		float acro_max_x_rate_rad;
 		float acro_max_y_rate_rad;
 		float acro_max_z_rate_rad;
 
-		float flaps_scale;				/**< Scale factor for flaps */
+		float flaps_scale;		   /**< Scale factor for flaps */
 		float flaps_takeoff_scale; /**< Scale factor for flaps on take-off */
-		float flaperon_scale;			/**< Scale factor for flaperons */
+		float flaperon_scale;	  /**< Scale factor for flaperons */
 
 		float rattitude_thres;
 
-		int32_t vtol_type;					/**< VTOL type: 0 = tailsitter, 1 = tiltrotor */
+		int32_t vtol_type; /**< VTOL type: 0 = tailsitter, 1 = tiltrotor */
 
-		int32_t bat_scale_en;			/**< Battery scaling enabled */
+		int32_t bat_scale_en; /**< Battery scaling enabled */
 		bool airspeed_disabled;
 
-        /// ========> ////////////////////////////////////////////////////////////////////
-        // Etienne - Suwave custom parameters for vertical aquatic takeoff
-        float take_off_custom_time_01;
-        float take_off_custom_time_03;
-        float take_off_custom_time_04;
-        float take_off_prop_horizontal;
-        float take_off_prop_vertical;
-        float take_off_rudder_offset;
-        float take_off_rising_pitch_des;
-        float take_off_rising_pitch_kp;
-        float take_off_rising_pitch_kd;
-        float take_off_rising_yaw_kp;
-        float take_off_rising_yaw_kd;
-        float take_off_climbing_pitch_des;
-        float take_off_climbing_pitch_kp;
-        float take_off_climbing_pitch_kd;
-        float take_off_climbing_roll_kp;
-        float take_off_climbing_roll_kd;
-        float take_off_climbing_yawrate_kp;
-        float take_off_height_agl_trigger;
+		/// ========> ////////////////////////////////////////////////////////////////////
+		// Etienne - Suwave custom parameters for vertical aquatic takeoff
+		float take_off_custom_time_01;
+		float take_off_custom_time_03;
+		float take_off_custom_time_04;
+		float take_off_prop_fly;
+		float take_off_prop_horizontal;
+		float take_off_prop_vertical;
+		float take_off_rudder_offset;
+		float take_off_rising_pitch_des;
+		float take_off_rising_pitch_kp;
+		float take_off_rising_pitch_kd;
+		float take_off_rising_yaw_kp;
+		float take_off_rising_yaw_kd;
+		float take_off_climbing_pitch_des;
+		float take_off_climbing_pitch_kp;
+		float take_off_climbing_pitch_kd;
+		float take_off_climbing_roll_kp;
+		float take_off_climbing_roll_kd;
+		float take_off_climbing_yawrate_kp;
+		float take_off_height_agl_trigger;
 		bool take_off_indoor;
 
-        /// <======= ///////////////////////////////////////////////////////////////////////
+		/// <======= ///////////////////////////////////////////////////////////////////////
 
-    } _parameters{};			/**< local copies of interesting parameters */
+	} _parameters{}; /**< local copies of interesting parameters */
 
-	struct {
+	struct
+	{
 
 		param_t p_tc;
 		param_t p_p;
@@ -305,72 +307,73 @@ private:
 		param_t bat_scale_en;
 		param_t airspeed_mode;
 
-        /// ========> ////////////////////////////////////////////////////////////////////
-        // Etienne - Suwave custom parameters for vertical aquatic takeoff
-        param_t take_off_custom_time_01;
-        param_t take_off_custom_time_03;
-        param_t take_off_custom_time_04;
-        param_t take_off_prop_horizontal;
-        param_t take_off_prop_vertical;
-        param_t take_off_rudder_offset;
-        param_t take_off_rising_pitch_des;
-        param_t take_off_rising_pitch_kp;
-        param_t take_off_rising_pitch_kd;
-        param_t take_off_rising_yaw_kp;
-        param_t take_off_rising_yaw_kd;
-        param_t take_off_climbing_pitch_des;
-        param_t take_off_climbing_pitch_kp;
-        param_t take_off_climbing_pitch_kd;
-        param_t take_off_climbing_roll_kp;
-        param_t take_off_climbing_roll_kd;
-        param_t take_off_climbing_yawrate_kp;
-        param_t take_off_height_agl_trigger;
-        param_t take_off_indoor;
+		/// ========> ////////////////////////////////////////////////////////////////////
+		// Etienne - Suwave custom parameters for vertical aquatic takeoff
+		param_t take_off_custom_time_01;
+		param_t take_off_custom_time_03;
+		param_t take_off_custom_time_04;
+		param_t take_off_prop_fly;
+		param_t take_off_prop_horizontal;
+		param_t take_off_prop_vertical;
+		param_t take_off_rudder_offset;
+		param_t take_off_rising_pitch_des;
+		param_t take_off_rising_pitch_kp;
+		param_t take_off_rising_pitch_kd;
+		param_t take_off_rising_yaw_kp;
+		param_t take_off_rising_yaw_kd;
+		param_t take_off_climbing_pitch_des;
+		param_t take_off_climbing_pitch_kp;
+		param_t take_off_climbing_pitch_kd;
+		param_t take_off_climbing_roll_kp;
+		param_t take_off_climbing_roll_kd;
+		param_t take_off_climbing_yawrate_kp;
+		param_t take_off_height_agl_trigger;
+		param_t take_off_indoor;
 
+	} _parameter_handles{}; /**< handles for interesting parameters */
 
-	} _parameter_handles{};		/**< handles for interesting parameters */
-
-    uint64_t present_time;
+	uint64_t present_time;
 	bool mode_take_off_custom;
 	bool take_off_trigger;
-    struct {
-        float alt0;
+	struct
+	{
+		float alt0;
 		Eulerf eulAtt;
 		Quatf qAtt;
 		Eulerf eulDes;
 		Quatf qDes;
 		Quatf qAtt2Des;
 		Eulerf eulAtt2Des;
-    } _verticalTk;
+	} _verticalTk;
 
-	enum VerticalTakeoffSequence {
-		WAIT, /**<  */
-		FLIP, /**<  */
-		RISING, /**<  */
+	enum VerticalTakeoffSequence
+	{
+		WAIT,	 /**<  */
+		FLIP,	 /**<  */
+		RISING,   /**<  */
 		CLIMBING, /**<  */
-	} ;
+	};
 	VerticalTakeoffSequence mode_seq;
 
 	/// <======= ////////////////////////////////////////////////////////////////////
 
-	ECL_RollController				_roll_ctrl;
-	ECL_PitchController				_pitch_ctrl;
-	ECL_YawController				_yaw_ctrl;
-	ECL_WheelController			_wheel_ctrl;
+	ECL_RollController _roll_ctrl;
+	ECL_PitchController _pitch_ctrl;
+	ECL_YawController _yaw_ctrl;
+	ECL_WheelController _wheel_ctrl;
 
 	void control_flaps(const float dt);
 
 	/**
 	 * Update our local parameter cache.
 	 */
-	int		parameters_update();
+	int parameters_update();
 
-	void		vehicle_control_mode_poll();
-	void		vehicle_manual_poll();
-	void		vehicle_setpoint_poll();
-	void		global_pos_poll();
-	void		vehicle_status_poll();
-	void		vehicle_land_detected_poll();
-	void		vertical_takeoff_controller();
-
+	void vehicle_control_mode_poll();
+	void vehicle_manual_poll();
+	void vehicle_setpoint_poll();
+	void global_pos_poll();
+	void vehicle_status_poll();
+	void vehicle_land_detected_poll();
+	void vertical_takeoff_controller();
 };
