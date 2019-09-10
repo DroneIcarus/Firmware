@@ -572,6 +572,7 @@ CHARGING_I2C::collect()
 		report.rep_soc = (float)(((int)val10[1] * 256) | (int)val10[0])/256.0f;
 		// report.rep_soc = report.rep_cap/(_parameters.bat_cap*1.0f) * 100;	// reported state of charge (%)
 
+		battery_report.timestamp = hrt_absolute_time();
 		battery_report.voltage_v = report.avg_vcell3 + report.avg_vcell2 + report.avg_vcell1;
 		battery_report.voltage_filtered_v = battery_report.voltage_v;
 		battery_report.current_a = report.current / 10.0f;
