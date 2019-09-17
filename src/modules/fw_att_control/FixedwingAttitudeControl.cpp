@@ -459,8 +459,8 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
     /* Sequences of the controller for the custom takeoff */
     float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
     float _elevDes;
-    float slopeElev = (_parameters.take_off_climbing_pitch_des - _parameters.take_off_rising_pitch_des)/_parameters.take_off_custom_time_04;
-    float slopeThrottle = (0.0f - 1.0f) / _parameters.take_off_custom_time_04;
+//    float slopeElev = (_parameters.take_off_climbing_pitch_des - _parameters.take_off_rising_pitch_des)/_parameters.take_off_custom_time_04;
+//    float slopeThrottle = (0.0f - 1.0f) / _parameters.take_off_custom_time_04;
 	float _pitchErr;
 	float _rollErr;
 	float _yawErr;
@@ -548,15 +548,18 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 
         // 4 - NoseDown Control, Climbing sequence
         case CLIMBING :
-            if (_parameters.take_off_indoor) {
-                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = slopeThrottle * (hrt_absolute_time() - present_time) + 1.0f;
-                _elevDes = (slopeElev*(hrt_absolute_time() - present_time) + _parameters.take_off_rising_pitch_des)* D2R;
-            }
-            else {
-                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-                _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
-            }
-            // Present attitude from Quaternion to Euler ZXY
+//            if (_parameters.take_off_indoor) {
+//                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = slopeThrottle * (hrt_absolute_time() - present_time) + 1.0f;
+//                _elevDes = (slopeElev*(hrt_absolute_time() - present_time) + _parameters.take_off_rising_pitch_des)* D2R;
+//            }
+//            else {
+//                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+//                _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
+//            }
+			float t = hrt_absolute_time() - present_time;
+			_elevDes = (_parameters.take_off_rising_pitch_des- _parameters.take_off_climbing_pitch_des)*exp2f(-5.0f/_parameters.take_off_custom_time_04*t)+_parameters.take_off_climbing_pitch_des;
+
+	// Present attitude from Quaternion to Euler ZXY
             float _headingNow = atan2f(-2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(2) - _verticalTk.qAtt(0) * _verticalTk.qAtt(3)),
                                        1.0f - 2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(1) + _verticalTk.qAtt(3) * _verticalTk.qAtt(3)));
             float _bankNow = asinf(2.0f * (_verticalTk.qAtt(2) * _verticalTk.qAtt(3) + _verticalTk.qAtt(0) * _verticalTk.qAtt(1)));
