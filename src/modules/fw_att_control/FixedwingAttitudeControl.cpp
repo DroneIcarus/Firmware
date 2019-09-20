@@ -453,7 +453,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 	_verticalTk.eulAtt = _verticalTk.qAtt;
 
     /* only for debug */
-//    static int _countPrint =0;
+    static int _countPrint =0;
 
     /* Sequences of the controller for the custom takeoff */
     float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
@@ -527,12 +527,6 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
 
-//			if (++_countPrint >= 100)
-//			{
-//				warn("_verticalTk.alt0 : %0.3f", (double)(_verticalTk.alt0));
-//				warn("_local_pos.z : %0.3f", (double)(_local_pos.z));
-//				_countPrint = 0;
-//			}
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03) // 2 sec
             {
@@ -553,9 +547,14 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 //                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
 //                _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
 //            }
-			float t = hrt_absolute_time() - present_time;
-			_elevDes = (_parameters.take_off_rising_pitch_des- _parameters.take_off_climbing_pitch_des)*exp2f(-5.0f/_parameters.take_off_custom_time_04*t)+_parameters.take_off_climbing_pitch_des;
-
+			float t = (hrt_absolute_time() - present_time)/1000000;
+			_elevDes = ((_parameters.take_off_rising_pitch_des- _parameters.take_off_climbing_pitch_des)*exp2f(-5.0f/_parameters.take_off_custom_time_04*t)+_parameters.take_off_climbing_pitch_des)* D2R;
+			if (++_countPrint >= 100)
+			{
+				warn("_elevDes : %0.3f", (double)(_elevDes));
+				warn("_local_pos.z : %0.3f", (double)(t));
+				_countPrint = 0;
+			}
 	// Present attitude from Quaternion to Euler ZXY
             float _headingNow = atan2f(-2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(2) - _verticalTk.qAtt(0) * _verticalTk.qAtt(3)),
                                        1.0f - 2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(1) + _verticalTk.qAtt(3) * _verticalTk.qAtt(3)));
