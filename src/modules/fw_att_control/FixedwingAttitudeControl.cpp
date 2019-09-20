@@ -454,7 +454,6 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 
     /* only for debug */
 //    static int _countPrint =0;
-	bool etiTest;
 
     /* Sequences of the controller for the custom takeoff */
     float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
@@ -527,17 +526,15 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
-			etiTest = (_local_pos.z-_verticalTk.alt0 >= _parameters.take_off_height_agl_trigger) && _parameters.take_off_indoor;
 
 //			if (++_countPrint >= 100)
 //			{
 //				warn("_verticalTk.alt0 : %0.3f", (double)(_verticalTk.alt0));
 //				warn("_local_pos.z : %0.3f", (double)(_local_pos.z));
-//				warn("check : %d", (bool)(etiTest));
 //				_countPrint = 0;
 //			}
 
-            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03 || etiTest) // 2 sec
+            if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_03) // 2 sec
             {
                 warnx("Transit to NoseDown Control");
                 present_time = hrt_absolute_time();
