@@ -547,21 +547,14 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 //                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
 //                _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
 //            }
-			_actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-			float t = (hrt_absolute_time() - present_time);
-			_elevDes = ((_parameters.take_off_rising_pitch_des- _parameters.take_off_climbing_pitch_des)*expf(-5.0f/_parameters.take_off_custom_time_04*t)+_parameters.take_off_climbing_pitch_des)* D2R;
-			if (++_countPrint >= 100)
-			{
-				warn("_elevDes : %0.3f", (double)(_elevDes));
-				warn("_local_pos.z : %0.3f", (double)(t));
-				_countPrint = 0;
-			}
-	// Present attitude from Quaternion to Euler ZXY
+
+			// Present attitude from Quaternion to Euler ZXY
             float _headingNow = atan2f(-2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(2) - _verticalTk.qAtt(0) * _verticalTk.qAtt(3)),
                                        1.0f - 2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(1) + _verticalTk.qAtt(3) * _verticalTk.qAtt(3)));
             float _bankNow = asinf(2.0f * (_verticalTk.qAtt(2) * _verticalTk.qAtt(3) + _verticalTk.qAtt(0) * _verticalTk.qAtt(1)));
             // Quaternion with the right heading and elevation from nose down movement of present attitude - From Euler Rotation ZXY to Quaternion
-            float cang[3] = {cosf(_headingNow / 2.0f), cosf(_bankNow / 2.0f), cosf(_elevDes / cosf(_bankNow) / 2.0f)};
+			_elevDes = _parameters.take_off_climbing_pitch_des * D2R;
+			float cang[3] = {cosf(_headingNow / 2.0f), cosf(_bankNow / 2.0f), cosf(_elevDes / cosf(_bankNow) / 2.0f)};
             float sang[3] = {sinf(_headingNow / 2.0f), sinf(_bankNow / 2.0f), sinf(_elevDes / cosf(_bankNow) / 2.0f)};
             matrix::Quatf _qElev;
             _qElev(0) = cang[0] * cang[1] * cang[2] - sang[0] * sang[1] * sang[2];
@@ -576,9 +569,18 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
             _pitchErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(3) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(2)),
                                      1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2)));
-            _rollErr = asinf(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)));
-//								_yawErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)), 1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
+			float t = (hrt_absolute_time() - present_time);
+			_pitchErr = (1-expf(-5.0f*t/_parameters.take_off_custom_time_04))*_pitchErr;
+			if (++_countPrint >= 100)
+			{
+				warn("_pitchErr : %0.3f", (double)(_pitchErr));
+				warn("t : %0.3f", (double)(t));
+				_countPrint = 0;
+			}
+			_rollErr = asinf(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)));
+//			_yawErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)), 1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
 
+			_actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
             _actuators_airframe.control[1] = (_pitchErr * _parameters.take_off_climbing_pitch_kp -
                                               _att.pitchspeed * _parameters.take_off_climbing_pitch_kd) * r2servo +
                                              _parameters.take_off_prop_horizontal;
