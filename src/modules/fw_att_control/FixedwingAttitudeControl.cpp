@@ -573,7 +573,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 			_pitchErr = (1-expf(-5.0f*t/_parameters.take_off_custom_time_04))*_pitchErr;
 			if (++_countPrint >= 100)
 			{
-				warn("_pitchErr : %0.3f", (double)(_pitchErr));
+				warn("_pitchErr : %0.3f", (double)(_pitchErr*R2D));
 				warn("t : %0.3f", (double)(t));
 				_countPrint = 0;
 			}
