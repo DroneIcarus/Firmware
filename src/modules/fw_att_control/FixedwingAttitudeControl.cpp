@@ -547,8 +547,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 //                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
 //                _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
 //            }
-			float t = (hrt_absolute_time() - present_time)/1000000;
-			_elevDes = ((_parameters.take_off_rising_pitch_des- _parameters.take_off_climbing_pitch_des)*exp2f(-5.0f/_parameters.take_off_custom_time_04*t)+_parameters.take_off_climbing_pitch_des)* D2R;
+			_actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+			float t = (hrt_absolute_time() - present_time);
+			_elevDes = ((_parameters.take_off_rising_pitch_des- _parameters.take_off_climbing_pitch_des)*expf(-5.0f/_parameters.take_off_custom_time_04*t)+_parameters.take_off_climbing_pitch_des)* D2R;
 			if (++_countPrint >= 100)
 			{
 				warn("_elevDes : %0.3f", (double)(_elevDes));
