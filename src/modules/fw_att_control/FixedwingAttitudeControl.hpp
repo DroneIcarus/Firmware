@@ -229,6 +229,8 @@ private:
 		float take_off_climbing_pitch_des;
 		float take_off_climbing_pitch_kp;
 		float take_off_climbing_pitch_kd;
+        float take_off_climbing_elev_kp;
+        float take_off_climbing_elev_kd;
 		float take_off_climbing_roll_kp;
 		float take_off_climbing_roll_kd;
 		float take_off_climbing_yawrate_kp;
@@ -324,6 +326,8 @@ private:
 		param_t take_off_climbing_pitch_des;
 		param_t take_off_climbing_pitch_kp;
 		param_t take_off_climbing_pitch_kd;
+        param_t take_off_climbing_elev_kp;
+        param_t take_off_climbing_elev_kd;
 		param_t take_off_climbing_roll_kp;
 		param_t take_off_climbing_roll_kd;
 		param_t take_off_climbing_yawrate_kp;

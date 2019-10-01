@@ -217,11 +217,35 @@ PARAM_DEFINE_FLOAT(TK_CLB_PITCH_KP, 0.30f);
  * @group FW Attitude Control
 */
 PARAM_DEFINE_FLOAT(TK_CLB_PITCH_KD, 0.02f);
+
+/**
+ * Custom takeoff controller : Climb sequence, Kd on elevator error
+ *
+ * @min -10.0
+ * @max  10.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(TK_CLB_ELEV_KP, 0.30f);
+
+/**
+ * Custom takeoff controller : Climb sequence, Kd on elevator error
+ *
+ *
+ * @min -10.0
+ * @max  10.0
+ * @decimal 3
+ * @increment 0.001
+ * @group FW Attitude Control
+*/
+PARAM_DEFINE_FLOAT(TK_CLB_ELEV_KD, 0.02f);
+
 /**
  * Custom takeoff controller : Climb sequence, Kd on roll error
  *
- * @min -1000.0
- * @max  1000.0
+ * @min -100.0
+ * @max  100.0
  * @decimal 3
  * @increment 0.001
  * @group FW Attitude Control
@@ -231,8 +255,8 @@ PARAM_DEFINE_FLOAT(TK_CLB_ROLL_KP, 2.000f);
 /**
  * Custom takeoff controller : Climb sequence, Kd on roll error
  *
- * @min -1000.0
- * @max  1000.0
+ * @min -100.0
+ * @max  100.0
  * @decimal 3
  * @increment 0.001
  * @group FW Attitude Control

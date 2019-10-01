@@ -131,6 +131,8 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
     _parameter_handles.take_off_climbing_pitch_des= param_find("TK_CLB_PITCH_DES");
     _parameter_handles.take_off_climbing_pitch_kp= param_find("TK_CLB_PITCH_KP");
     _parameter_handles.take_off_climbing_pitch_kd= param_find("TK_CLB_PITCH_KD");
+    _parameter_handles.take_off_climbing_elev_kp= param_find("TK_CLB_ELEV_KP");
+    _parameter_handles.take_off_climbing_elev_kd= param_find("TK_CLB_ELEV_KD");
     _parameter_handles.take_off_climbing_roll_kp= param_find("TK_CLB_ROLL_KP");
     _parameter_handles.take_off_climbing_roll_kd= param_find("TK_CLB_ROLL_KD");
     _parameter_handles.take_off_climbing_yawrate_kp= param_find("TK_CLB_YAWRAT_KP");
@@ -249,6 +251,8 @@ FixedwingAttitudeControl::parameters_update()
     param_get(_parameter_handles.take_off_climbing_pitch_des, &_parameters.take_off_climbing_pitch_des);
     param_get(_parameter_handles.take_off_climbing_pitch_kp, &_parameters.take_off_climbing_pitch_kp);
     param_get(_parameter_handles.take_off_climbing_pitch_kd, &_parameters.take_off_climbing_pitch_kd);
+    param_get(_parameter_handles.take_off_climbing_elev_kp, &_parameters.take_off_climbing_elev_kp);
+    param_get(_parameter_handles.take_off_climbing_elev_kd, &_parameters.take_off_climbing_elev_kd);
     param_get(_parameter_handles.take_off_climbing_roll_kp, &_parameters.take_off_climbing_roll_kp);
     param_get(_parameter_handles.take_off_climbing_roll_kd, &_parameters.take_off_climbing_roll_kd);
     param_get(_parameter_handles.take_off_climbing_yawrate_kp, &_parameters.take_off_climbing_yawrate_kp);
@@ -581,7 +585,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 			if (++_countPrint >= 100)
 			{
 				warn("_pitchErr : %0.3f", (double)(_pitchErr*R2D));
-				warn("t : %0.3f", (double)(t));
+				warn("t : %0.3f", (double)(t/1000000));
 				_countPrint = 0;
 			}
 			_rollErr = asinf(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)));
@@ -593,11 +597,13 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                                              _parameters.take_off_prop_horizontal;
             _actuators_airframe.control[2] =
                     (-_att.yawspeed * _parameters.take_off_climbing_yawrate_kp) + _parameters.take_off_rudder_offset;
-            _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr * _parameters.take_off_climbing_roll_kp -
-                                                                   _att.rollspeed *
-                                                                   _parameters.take_off_climbing_roll_kd) +
-                                                                  _parameters.trim_roll;
-            _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+            _actuators.control[actuator_controls_s::INDEX_ROLL] = _rollErr * _parameters.take_off_climbing_roll_kp
+                                                                  - _att.rollspeed * _parameters.take_off_climbing_roll_kd
+                                                                  + _parameters.trim_roll;
+//            _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
+            _actuators.control[actuator_controls_s::INDEX_PITCH ] = (_pitchErr * _parameters.take_off_climbing_elev_kp)*signbit(-_pitchErr)
+                                                                     - (_att.pitchspeed * _parameters.take_off_climbing_elev_kd)*signbit(_att.pitchspeed)
+                                                                     + _parameters.trim_pitch;
 
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
