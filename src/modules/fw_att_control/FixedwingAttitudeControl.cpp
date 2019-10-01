@@ -480,6 +480,8 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 present_time = hrt_absolute_time();
                 mode_seq = FLIP;
                 _verticalTk.alt0 = _local_pos.z;
+                _verticalTk.head0 = _verticalTk.eulAtt(2);
+
             }
             break;
 
@@ -491,13 +493,15 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
             _verticalTk.alt0 = EMACOEF*_local_pos.z + (1-EMACOEF) * _verticalTk.alt0;
+//            _verticalTk.head0 = EMACOEF*_verticalTk.eulAtt(2) + (1-EMACOEF) * _verticalTk.head0; //Nofilter?
 
             if (hrt_absolute_time() - present_time >= 1000000) //(int)_parameters.take_off_custom_time_03) // 1 sec
             {
                 warnx("Transit to TakeOff Control");
                 present_time = hrt_absolute_time();
                 mode_seq = RISING;
-                warnx("_verticalTk.alt0 : %0.3f", (double)(_verticalTk.alt0));
+                warnx("_verticalTk.alt0  : %0.3f", (double)(_verticalTk.alt0));
+                warnx("_verticalTk.head0 : %0.3f", (double)(_verticalTk.head0));
             }
             break;
 
@@ -505,7 +509,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
         // 3 - Vertical takeoff Control, Rising sequence
         case RISING :
             _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-			_verticalTk.eulDes = Eulerf(_verticalTk.eulAtt(2), _parameters.take_off_rising_pitch_des*D2R, 0.0f);
+			_verticalTk.eulDes = Eulerf(0.0f, _parameters.take_off_rising_pitch_des*D2R, _verticalTk.head0);
             _verticalTk.qDes = Quatf(_verticalTk.eulDes);
             _verticalTk.qAtt2Des = _verticalTk.qAtt.inversed() * _verticalTk.qDes;
             _verticalTk.eulAtt2Des = _verticalTk.qAtt2Des;
@@ -514,8 +518,8 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 			_pitchErr = atan2f(-2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(2)),
 									 1.0f - 2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
 			_yawErr = asinf(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)));
-//            _rollErr = atan2f(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)),
-//                              1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
+            _rollErr = atan2f(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)),
+                              1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
 
 			_actuators_airframe.control[1] = (_parameters.take_off_rising_pitch_kp * _pitchErr -
                                               _parameters.take_off_rising_pitch_kd * _att.pitchspeed) * r2servo +
@@ -523,7 +527,10 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators_airframe.control[2] = (_parameters.take_off_rising_yaw_kp * _yawErr -
                                               _parameters.take_off_rising_yaw_kd * _att.yawspeed) +
                                              _parameters.take_off_rudder_offset;
-            _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
+            _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr * _parameters.take_off_climbing_roll_kp -
+                                                                   _att.rollspeed *
+                                                                   _parameters.take_off_climbing_roll_kd) +
+                                                                  _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
 

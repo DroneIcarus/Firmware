@@ -338,6 +338,7 @@ private:
 	struct
 	{
 		float alt0;
+		float head0;
 		Eulerf eulAtt;
 		Quatf qAtt;
 		Eulerf eulDes;
