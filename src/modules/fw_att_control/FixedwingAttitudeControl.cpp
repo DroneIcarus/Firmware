@@ -560,11 +560,16 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 //            }
 
 			// Present attitude from Quaternion to Euler ZXY
+            float t = (hrt_absolute_time() - present_time);
+            float decayFilter = (expf(-5.0f*t/_parameters.take_off_custom_time_04));
+
+            _elevDes = ((_parameters.take_off_rising_pitch_des -_parameters.take_off_climbing_pitch_des)*decayFilter +_parameters.take_off_climbing_pitch_des) * D2R;
+
             float _headingNow = atan2f(-2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(2) - _verticalTk.qAtt(0) * _verticalTk.qAtt(3)),
                                        1.0f - 2.0f * (_verticalTk.qAtt(1) * _verticalTk.qAtt(1) + _verticalTk.qAtt(3) * _verticalTk.qAtt(3)));
             float _bankNow = asinf(2.0f * (_verticalTk.qAtt(2) * _verticalTk.qAtt(3) + _verticalTk.qAtt(0) * _verticalTk.qAtt(1)));
+
             // Quaternion with the right heading and elevation from nose down movement of present attitude - From Euler Rotation ZXY to Quaternion
-			_elevDes = _parameters.take_off_climbing_pitch_des * D2R;
 			float cang[3] = {cosf(_headingNow / 2.0f), cosf(_bankNow / 2.0f), cosf(_elevDes / cosf(_bankNow) / 2.0f)};
             float sang[3] = {sinf(_headingNow / 2.0f), sinf(_bankNow / 2.0f), sinf(_elevDes / cosf(_bankNow) / 2.0f)};
             matrix::Quatf _qElev;
@@ -572,23 +577,23 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _qElev(1) = cang[0] * sang[1] * cang[2] - sang[0] * cang[1] * sang[2];
             _qElev(2) = cang[0] * cang[1] * sang[2] + sang[0] * sang[1] * cang[2];
             _qElev(3) = cang[0] * sang[1] * sang[2] + sang[0] * cang[1] * cang[2];
-            matrix::Eulerf _eulElev = _qElev;
+//            matrix::Eulerf _eulElev = _qElev;
             // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
-			_verticalTk.eulDes = Eulerf(0.0f, _eulElev(1), _eulElev(2));
-            _verticalTk.qDes = Quatf(_verticalTk.eulDes);
-            _verticalTk.qAtt2Des = _verticalTk.qAtt.inversed() * _verticalTk.qDes;
+//			_verticalTk.eulDes = Eulerf(0.0f, _eulElev(1), _eulElev(2));
+//            _verticalTk.qDes = Quatf(_verticalTk.eulDes);
+            _verticalTk.qAtt2Des = _verticalTk.qAtt.inversed() * _qElev;
             // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
+            _rollErr = -_headingNow;
             _pitchErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(3) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(2)),
                                      1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2)));
-			float t = (hrt_absolute_time() - present_time);
-			_pitchErr = (1-expf(-5.0f*t/_parameters.take_off_custom_time_04))*_pitchErr;
+
 			if (++_countPrint >= 100)
 			{
 				warn("_pitchErr : %0.3f", (double)(_pitchErr*R2D));
-				warn("t : %0.3f", (double)(t/1000000));
+				warn("_rollErr  : %0.3f", (double)(_rollErr*R2D));
 				_countPrint = 0;
 			}
-			_rollErr = asinf(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)));
+//			_rollErr = asinf(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)));
 //			_yawErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)), 1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
 
 			_actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
