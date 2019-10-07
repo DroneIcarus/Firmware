@@ -583,7 +583,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 //            _verticalTk.qDes = Quatf(_verticalTk.eulDes);
             _verticalTk.qAtt2Des = _verticalTk.qAtt.inversed() * _qElev;
             // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
-            _rollErr = -_headingNow;
+            _rollErr = -_bankNow;
             _pitchErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(3) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(2)),
                                      1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2)));
 
