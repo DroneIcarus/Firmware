@@ -505,7 +505,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                 present_time = hrt_absolute_time();
                 mode_seq = RISING;
                 warnx("_verticalTk.alt0  : %0.3f", (double)(_verticalTk.alt0));
-                warnx("_verticalTk.head0 : %0.3f", (double)(_verticalTk.head0));
+                warnx("_verticalTk.head0 : %0.3f", (double)(_verticalTk.head0*R2D));
             }
             break;
 
@@ -531,10 +531,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators_airframe.control[2] = (_parameters.take_off_rising_yaw_kp * _yawErr -
                                               _parameters.take_off_rising_yaw_kd * _att.yawspeed) +
                                              _parameters.take_off_rudder_offset;
-            _actuators.control[actuator_controls_s::INDEX_ROLL] = (_rollErr * _parameters.take_off_climbing_roll_kp -
-                                                                   _att.rollspeed *
-                                                                   _parameters.take_off_climbing_roll_kd) +
-                                                                  _parameters.trim_roll;
+            _actuators.control[actuator_controls_s::INDEX_ROLL] = _rollErr * _parameters.take_off_climbing_roll_kp
+                                                                  - _att.rollspeed * _parameters.take_off_climbing_roll_kd
+                                                                  + _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
 
 
