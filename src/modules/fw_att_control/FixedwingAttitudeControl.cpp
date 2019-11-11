@@ -552,15 +552,6 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 
         // 4 - NoseDown Control, Climbing sequence
         case CLIMBING :
-//            if (_parameters.take_off_indoor) {
-//                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = slopeThrottle * (hrt_absolute_time() - present_time) + 1.0f;
-//                _elevDes = (slopeElev*(hrt_absolute_time() - present_time) + _parameters.take_off_rising_pitch_des)* D2R;
-//            }
-//            else {
-//                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
-//                _elevDes = _parameters.take_off_climbing_pitch_des * D2R;
-//            }
-
 			// Present attitude from Quaternion to Euler ZXY
             float t = (hrt_absolute_time() - present_time);
             float decayFilter = (expf(-5.0f*t/_parameters.take_off_custom_time_04));
@@ -587,7 +578,12 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
                                      1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2)));
 
 
-
+            if (_parameters.take_off_indoor) {
+                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
+            }
+            else {
+                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+            }
 			_actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
             _actuators_airframe.control[1] = (_pitchErr * _parameters.take_off_climbing_pitch_kp -
                                               _att.pitchspeed * _parameters.take_off_climbing_pitch_kd) * r2servo +
@@ -1108,15 +1104,6 @@ void FixedwingAttitudeControl::run()
 				orb_publish_auto(ORB_ID(rate_ctrl_status), &_rate_ctrl_status_pub, &rate_ctrl_status, &instance, ORB_PRIO_DEFAULT);
 			}
 
-//            if(!_vcontrol_mode.flag_control_attitude_enabled || !_vcontrol_mode.flag_control_rates_enabled || (!_vcontrol_mode.flag_control_climb_rate_enabled && !_vcontrol_mode.flag_control_offboard_enabled))
-//            {
-//                _actuators_airframe.control[1] = _parameters.take_off_prop_fly;
-//                _actuators_airframe.control[2] = _parameters.take_off_rudder_offset;
-//
-//                present_time = hrt_absolute_time();
-//                mode_seq = WAIT;
-//                mode_take_off_custom = false;
-//            }
 
             /////////////////////////////////////////////////////////////////////////////////////////////
             ////////////////////===========> Etienne - Takeoff trigger when Indoor flight, No GPS
