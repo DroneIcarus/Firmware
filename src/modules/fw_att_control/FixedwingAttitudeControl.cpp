@@ -457,13 +457,17 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 	_verticalTk.eulAtt = _verticalTk.qAtt;
 
     /* only for debug */
-    static int _countPrint =0;
+//    static int _countPrint =0;
+//    if (++_countPrint >= 100)
+//    {
+//        warn("_pitchErr : %0.3f", (double)(_pitchErr*R2D));
+//        warn("_rollErr  : %0.3f", (double)(_rollErr*R2D));
+//        _countPrint = 0;
+//    }
 
     /* Sequences of the controller for the custom takeoff */
     float r2servo = (_parameters.take_off_prop_vertical - _parameters.take_off_prop_horizontal) / (3.14159f / 2);
     float _elevDes;
-//    float slopeElev = (_parameters.take_off_climbing_pitch_des - _parameters.take_off_rising_pitch_des)/_parameters.take_off_custom_time_04;
-//    float slopeThrottle = (0.0f - 1.0f) / _parameters.take_off_custom_time_04;
 	float _pitchErr;
 	float _rollErr;
 	float _yawErr;
@@ -497,7 +501,6 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _parameters.trim_roll;
             _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
             _verticalTk.alt0 = EMACOEF*_local_pos.z + (1-EMACOEF) * _verticalTk.alt0;
-//            _verticalTk.head0 = EMACOEF*_verticalTk.eulAtt(2) + (1-EMACOEF) * _verticalTk.head0; //Nofilter?
 
             if (hrt_absolute_time() - present_time >= 1000000) //(int)_parameters.take_off_custom_time_03) // 1 sec
             {
@@ -576,24 +579,14 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _qElev(1) = cang[0] * sang[1] * cang[2] - sang[0] * cang[1] * sang[2];
             _qElev(2) = cang[0] * cang[1] * sang[2] + sang[0] * sang[1] * cang[2];
             _qElev(3) = cang[0] * sang[1] * sang[2] + sang[0] * cang[1] * cang[2];
-//            matrix::Eulerf _eulElev = _qElev;
-            // Quaternion desired from forcing Bank=0 to Quaternion with the right heading and elevation
-//			_verticalTk.eulDes = Eulerf(0.0f, _eulElev(1), _eulElev(2));
-//            _verticalTk.qDes = Quatf(_verticalTk.eulDes);
             _verticalTk.qAtt2Des = _verticalTk.qAtt.inversed() * _qElev;
+
             // Euler angle error from Quaternion error - Rotation YXZ to exclude yaw movement as required by the error calculation and allow pitch movement >90°
             _rollErr = -_bankNow;
             _pitchErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(3) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(2)),
                                      1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(2)));
 
-			if (++_countPrint >= 100)
-			{
-				warn("_pitchErr : %0.3f", (double)(_pitchErr*R2D));
-				warn("_rollErr  : %0.3f", (double)(_rollErr*R2D));
-				_countPrint = 0;
-			}
-//			_rollErr = asinf(-2.0f * (_verticalTk.qAtt2Des(2) * _verticalTk.qAtt2Des(3) - _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(1)));
-//			_yawErr = atan2f(2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(2) + _verticalTk.qAtt2Des(0) * _verticalTk.qAtt2Des(3)), 1.0f - 2.0f * (_verticalTk.qAtt2Des(1) * _verticalTk.qAtt2Des(1) + _verticalTk.qAtt2Des(3) * _verticalTk.qAtt2Des(3)));
+
 
 			_actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
             _actuators_airframe.control[1] = (_pitchErr * _parameters.take_off_climbing_pitch_kp -
@@ -604,11 +597,9 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             _actuators.control[actuator_controls_s::INDEX_ROLL] = _rollErr * _parameters.take_off_climbing_roll_kp
                                                                   - _att.rollspeed * _parameters.take_off_climbing_roll_kd
                                                                   + _parameters.trim_roll;
-//            _actuators.control[actuator_controls_s::INDEX_PITCH] = _parameters.trim_pitch;
             _actuators.control[actuator_controls_s::INDEX_PITCH ] = (_pitchErr * _parameters.take_off_climbing_elev_kp)*signbit(-_pitchErr)
                                                                      - (_att.pitchspeed * _parameters.take_off_climbing_elev_kd)*signbit(_att.pitchspeed)
                                                                      + _parameters.trim_pitch;
-
 
             if (hrt_absolute_time() - present_time >= _parameters.take_off_custom_time_04) // 120 ms
             {
