@@ -584,7 +584,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
             else {
                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
             }
-			_actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
+
             _actuators_airframe.control[1] = (_pitchErr * _parameters.take_off_climbing_pitch_kp -
                                               _att.pitchspeed * _parameters.take_off_climbing_pitch_kd) * r2servo +
                                              _parameters.take_off_prop_horizontal;
