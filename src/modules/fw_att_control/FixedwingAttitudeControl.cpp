@@ -579,7 +579,7 @@ FixedwingAttitudeControl::vertical_takeoff_controller() {
 
 
             if (_parameters.take_off_indoor) {
-                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 0.0f;
+                _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f * decayFilter;
             }
             else {
                 _actuators.control[actuator_controls_s::INDEX_THROTTLE] = 1.0f;
